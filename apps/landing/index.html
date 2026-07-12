@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Writing Assistant — Write Better Everywhere</title>
+    <meta
+      name="description"
+      content="Grammarly-style AI writing assistant Chrome extension. Fix grammar, rewrite, summarize on Gmail, Notion, LinkedIn, and any webpage."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Inter", system-ui, sans-serif;
+        color: #0f172a;
+        line-height: 1.6;
+      }
+
+      .hero {
+        background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+        color: white;
+        padding: 5rem 2rem;
+        text-align: center;
+      }
+
+      .hero h1 {
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        letter-spacing: -0.02em;
+      }
+
+      .hero p {
+        font-size: 1.25rem;
+        opacity: 0.9;
+        max-width: 600px;
+        margin: 0 auto 2rem;
+      }
+
+      .cta {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: white;
+        color: #2563eb;
+        padding: 0.875rem 2rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: transform 0.15s;
+      }
+
+      .cta:hover {
+        transform: translateY(-2px);
+      }
+
+      .features {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 4rem 2rem;
+      }
+
+      .features h2 {
+        text-align: center;
+        font-size: 2rem;
+        margin-bottom: 3rem;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+      }
+
+      .card {
+        border: 1px solid #e2e8f0;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+      }
+
+      .card h3 {
+        font-size: 1.125rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .card p {
+        color: #64748b;
+        font-size: 0.9375rem;
+      }
+
+      .card .icon {
+        font-size: 1.5rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .providers {
+        background: #f8fafc;
+        padding: 4rem 2rem;
+        text-align: center;
+      }
+
+      .providers h2 {
+        margin-bottom: 1.5rem;
+      }
+
+      .badges {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 1rem;
+      }
+
+      .badge {
+        background: white;
+        border: 1px solid #e2e8f0;
+        padding: 0.5rem 1.25rem;
+        border-radius: 999px;
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
+
+      footer {
+        text-align: center;
+        padding: 2rem;
+        color: #94a3b8;
+        font-size: 0.875rem;
+      }
+    </style>
+  </head>
+  <body>
+    <section class="hero">
+      <h1>AI Writing Assistant</h1>
+      <p>
+        Grammarly-style AI writing help on every webpage. Fix grammar, rewrite, summarize — with
+        your choice of AI provider.
+      </p>
+      <a
+        class="cta"
+        href="https://chrome.google.com/webstore"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Add to Chrome — Free
+      </a>
+    </section>
+
+    <section class="features">
+      <h2>Everything you need to write better</h2>
+      <div class="grid">
+        <div class="card">
+          <div class="icon">🎯</div>
+          <h3>Universal Detection</h3>
+          <p>
+            Works on Gmail, Notion, LinkedIn, Slack, GitHub, and any editable field — including
+            Shadow DOM.
+          </p>
+        </div>
+        <div class="card">
+          <div class="icon">⚡</div>
+          <h3>Streaming Suggestions</h3>
+          <p>Real-time AI responses with sentence-level diff preview and one-click accept.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🔒</div>
+          <h3>Privacy First</h3>
+          <p>
+            On-device mode, site allowlist/blocklist, personal dictionary. Analytics stay local.
+          </p>
+        </div>
+        <div class="card">
+          <div class="icon">🎨</div>
+          <h3>CSS Highlight API</h3>
+          <p>Zero-DOM-mutation grammar underlines for better performance and compatibility.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🧠</div>
+          <h3>Context Aware</h3>
+          <p>Automatically adapts prompts for email, social posts, blogs, code, and resumes.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🔧</div>
+          <h3>Multi-Provider</h3>
+          <p>OpenAI, Google Gemini, Anthropic Claude, or on-device Gemini Nano.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="providers">
+      <h2>Supported AI Providers</h2>
+      <div class="badges">
+        <span class="badge">OpenAI GPT-4o mini</span>
+        <span class="badge">Google Gemini 2.0 Flash</span>
+        <span class="badge">Anthropic Claude 3.5 Haiku</span>
+        <span class="badge">Gemini Nano (On-Device)</span>
+      </div>
+    </section>
+
+    <footer>
+      <p>AI Writing Assistant v1.0.0 · MIT License · Built with TypeScript, React 19, and Vite</p>
+    </footer>
+  </body>
+</html>
