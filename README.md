@@ -4,7 +4,6 @@
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Chrome Extension](https://img.shields.io/badge/Manifest-V3-4285F4?logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/mv3/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
 
 A **Grammarly-style Manifest V3 Chrome extension** for AI-powered writing assistance across Gmail, Notion, LinkedIn, Slack, GitHub, and any editable webpage — with **streaming LLM responses**, privacy controls, and on-device fallback.
 
@@ -49,26 +48,26 @@ Supports **9 writing actions** across **4 AI providers** with automatic failover
 
 ## Features
 
-| Feature | Status | Implementation |
-|---------|--------|----------------|
-| Universal editor detection | ✅ | Shadow DOM, MutationObserver, site selectors |
-| Selection & Range engine | ✅ | `selectionchange`, caret rect, range-aware apply |
-| OpenAI streaming | ✅ | SSE adapter in `@awa/ai-providers` |
-| Google Gemini streaming | ✅ | REST streaming adapter |
-| Anthropic Claude streaming | ✅ | SSE adapter |
-| Gemini Nano on-device | ✅ | `window.ai` LanguageModel API |
-| Provider failover | ✅ | Lazy init + automatic fallback chain |
-| 9 writing actions | ✅ | Grammar, rewrite, tone, summarize, etc. |
-| Real-time streaming | ✅ | `AbortController` + side panel rendering |
-| Sentence-level diff | ⚠️ | `Intl.Segmenter`; not Myers/LCS |
-| CSS Highlight API | ⚠️ | Contenteditable; input/textarea outline fallback |
-| Floating toolbar | ⚠️ | Shadow DOM quick actions; no undo UI |
-| Context-aware prompts | ✅ | Hostname → email, social, code, resume |
-| Privacy controls | ✅ | On-device mode, allowlist, blocklist, dictionary masking |
-| Local analytics | ⚠️ | Counters + weekly report; no reading level |
-| Debounced detection | ✅ | 300ms MutationObserver debounce |
-| Firefox manifest | ✅ | `browser_specific_settings.gecko` |
-| Chrome Store assets | ⚠️ | Listing copy; no screenshot PNGs |
+| Feature                    | Status | Implementation                                           |
+| -------------------------- | ------ | -------------------------------------------------------- |
+| Universal editor detection | ✅     | Shadow DOM, MutationObserver, site selectors             |
+| Selection & Range engine   | ✅     | `selectionchange`, caret rect, range-aware apply         |
+| OpenAI streaming           | ✅     | SSE adapter in `@awa/ai-providers`                       |
+| Google Gemini streaming    | ✅     | REST streaming adapter                                   |
+| Anthropic Claude streaming | ✅     | SSE adapter                                              |
+| Gemini Nano on-device      | ✅     | `window.ai` LanguageModel API                            |
+| Provider failover          | ✅     | Lazy init + automatic fallback chain                     |
+| 9 writing actions          | ✅     | Grammar, rewrite, tone, summarize, etc.                  |
+| Real-time streaming        | ✅     | `AbortController` + side panel rendering                 |
+| Sentence-level diff        | ⚠️     | `Intl.Segmenter`; not Myers/LCS                          |
+| CSS Highlight API          | ⚠️     | Contenteditable; input/textarea outline fallback         |
+| Floating toolbar           | ⚠️     | Shadow DOM quick actions; no undo UI                     |
+| Context-aware prompts      | ✅     | Hostname → email, social, code, resume                   |
+| Privacy controls           | ✅     | On-device mode, allowlist, blocklist, dictionary masking |
+| Local analytics            | ⚠️     | Counters + weekly report; no reading level               |
+| Debounced detection        | ✅     | 300ms MutationObserver debounce                          |
+| Firefox manifest           | ✅     | `browser_specific_settings.gecko`                        |
+| Chrome Store assets        | ⚠️     | Listing copy; no screenshot PNGs                         |
 
 ---
 
@@ -76,79 +75,79 @@ Supports **9 writing actions** across **4 AI providers** with automatic failover
 
 ### Core
 
-| Category | Technology | Version | Purpose |
-|----------|-----------|---------|---------|
-| Language | TypeScript | 5.9 | Strict typing across all contexts |
-| UI Framework | React | 19 | Popup, side panel, options, landing |
-| Build Tool | Vite | 6 | Fast HMR dev server |
-| Extension Build | CRXJS Vite Plugin | 2.0 beta | MV3 bundling + hot reload |
-| Package Manager | pnpm | 9 | Workspace dependency management |
-| Monorepo | Turborepo | 2.10 | Parallel builds, task caching |
+| Category        | Technology        | Version  | Purpose                             |
+| --------------- | ----------------- | -------- | ----------------------------------- |
+| Language        | TypeScript        | 5.9      | Strict typing across all contexts   |
+| UI Framework    | React             | 19       | Popup, side panel, options, landing |
+| Build Tool      | Vite              | 6        | Fast HMR dev server                 |
+| Extension Build | CRXJS Vite Plugin | 2.0 beta | MV3 bundling + hot reload           |
+| Package Manager | pnpm              | 9        | Workspace dependency management     |
+| Monorepo        | Turborepo         | 2.10     | Parallel builds, task caching       |
 
 ### UI & Styling
 
-| Category | Technology | Purpose |
-|----------|-----------|---------|
-| CSS | Tailwind CSS | 4 | Utility-first styling |
-| Tailwind Plugin | `@tailwindcss/vite` | Vite integration |
-| Components | `@awa/ui` | Shared Button, Card, Header, MetricRow |
+| Category        | Technology          | Purpose                                |
+| --------------- | ------------------- | -------------------------------------- |
+| CSS             | Tailwind CSS        | 4                                      | Utility-first styling |
+| Tailwind Plugin | `@tailwindcss/vite` | Vite integration                       |
+| Components      | `@awa/ui`           | Shared Button, Card, Header, MetricRow |
 
 ### AI & Streaming
 
-| Category | Technology | Purpose |
-|----------|-----------|---------|
-| OpenAI | GPT API (SSE) | Cloud grammar/rewrite via adapter |
-| Google Gemini | Gemini API | Cloud streaming adapter |
-| Anthropic | Claude API (SSE) | Cloud streaming adapter |
-| Gemini Nano | `window.ai` LanguageModel | On-device inference |
-| Streaming | `ReadableStream` + `AbortController` | Cancellable token-by-token output |
-| Prompts | `@awa/prompts` | 9 action templates + context injection |
+| Category      | Technology                           | Purpose                                |
+| ------------- | ------------------------------------ | -------------------------------------- |
+| OpenAI        | GPT API (SSE)                        | Cloud grammar/rewrite via adapter      |
+| Google Gemini | Gemini API                           | Cloud streaming adapter                |
+| Anthropic     | Claude API (SSE)                     | Cloud streaming adapter                |
+| Gemini Nano   | `window.ai` LanguageModel            | On-device inference                    |
+| Streaming     | `ReadableStream` + `AbortController` | Cancellable token-by-token output      |
+| Prompts       | `@awa/prompts`                       | 9 action templates + context injection |
 
 ### Chrome Extension Platform
 
-| API | Used In | Purpose |
-|-----|---------|---------|
-| `chrome.runtime` | All contexts | Message passing, streaming relay |
-| `chrome.storage` | Background, Options | API keys, privacy settings |
-| `chrome.sidePanel` | Background, Popup | Side panel for streaming results |
-| `chrome.tabs` | Background | Active tab routing |
-| `chrome.scripting` | Manifest permission | Dynamic script injection |
+| API                | Used In             | Purpose                          |
+| ------------------ | ------------------- | -------------------------------- |
+| `chrome.runtime`   | All contexts        | Message passing, streaming relay |
+| `chrome.storage`   | Background, Options | API keys, privacy settings       |
+| `chrome.sidePanel` | Background, Popup   | Side panel for streaming results |
+| `chrome.tabs`      | Background          | Active tab routing               |
+| `chrome.scripting` | Manifest permission | Dynamic script injection         |
 
 ### DOM & Text APIs
 
-| API | Package | Purpose |
-|-----|---------|---------|
-| `MutationObserver` | `editor-detection` | Dynamic editor discovery |
-| `Selection` / `Range` | `selection` | Text extraction + caret position |
-| `TreeWalker` | `editor-detection` | Shadow DOM traversal |
-| `CSS Highlight API` | `highlights` | Zero-DOM-mutation underlines |
-| `Intl.Segmenter` | `diff` | Sentence-level text segmentation |
-| `window.postMessage` | content ↔ injected | Cross-world communication |
+| API                   | Package            | Purpose                          |
+| --------------------- | ------------------ | -------------------------------- |
+| `MutationObserver`    | `editor-detection` | Dynamic editor discovery         |
+| `Selection` / `Range` | `selection`        | Text extraction + caret position |
+| `TreeWalker`          | `editor-detection` | Shadow DOM traversal             |
+| `CSS Highlight API`   | `highlights`       | Zero-DOM-mutation underlines     |
+| `Intl.Segmenter`      | `diff`             | Sentence-level text segmentation |
+| `window.postMessage`  | content ↔ injected | Cross-world communication        |
 
 ### Testing & Quality
 
-| Category | Technology | Purpose |
-|----------|-----------|---------|
-| Unit Tests | Vitest | 3.1 | diff, prompts, providers, streaming |
-| E2E Tests | Playwright | 1.51 | Browser API validation |
-| Linting | ESLint | 9 | Shared `@repo/eslint-config` |
-| Formatting | Prettier | 3.7 | Code style |
-| Git Hooks | Husky + lint-staged | Pre-commit quality gate |
-| CI/CD | GitHub Actions | Full pipeline on push/PR |
+| Category   | Technology          | Purpose                  |
+| ---------- | ------------------- | ------------------------ |
+| Unit Tests | Vitest              | 3.1                      | diff, prompts, providers, streaming |
+| E2E Tests  | Playwright          | 1.51                     | Browser API validation              |
+| Linting    | ESLint              | 9                        | Shared `@repo/eslint-config`        |
+| Formatting | Prettier            | 3.7                      | Code style                          |
+| Git Hooks  | Husky + lint-staged | Pre-commit quality gate  |
+| CI/CD      | GitHub Actions      | Full pipeline on push/PR |
 
 ---
 
 ## Chrome Extension Surfaces
 
-| Surface | Path | Description |
-|---------|------|-------------|
-| **Popup** | `apps/popup/` | Quick actions, selection preview, open side panel |
-| **Side Panel** | `apps/side-panel/` | Streaming AI output + diff view |
-| **Options Page** | `apps/options/` | API keys, privacy, analytics report |
-| **Landing Page** | `apps/landing/` | Static marketing page |
-| **Background SW** | `extension/background/` | AI routing, privacy filter, analytics |
-| **Content Script** | `extension/content/` | Floating toolbar, highlights, apply bridge |
-| **Injected Script** | `extension/injected/` | Page-world editor detection + selection |
+| Surface             | Path                    | Description                                       |
+| ------------------- | ----------------------- | ------------------------------------------------- |
+| **Popup**           | `apps/popup/`           | Quick actions, selection preview, open side panel |
+| **Side Panel**      | `apps/side-panel/`      | Streaming AI output + diff view                   |
+| **Options Page**    | `apps/options/`         | API keys, privacy, analytics report               |
+| **Landing Page**    | `apps/landing/`         | Static marketing page                             |
+| **Background SW**   | `extension/background/` | AI routing, privacy filter, analytics             |
+| **Content Script**  | `extension/content/`    | Floating toolbar, highlights, apply bridge        |
+| **Injected Script** | `extension/injected/`   | Page-world editor detection + selection           |
 
 ### Manifest Permissions
 
@@ -161,44 +160,44 @@ host_permissions: <all_urls>
 
 ## Browser APIs Used
 
-| API | Module | What It Does |
-|-----|--------|-------------|
-| `MutationObserver` | M2 | Detect dynamically added editors |
-| `Selection` / `Range` | M3 | Extract selected text + caret rect |
-| `Shadow DOM` traversal | M2 | Find editors inside web components |
-| `CSS Highlight API` | M8 | Grammar underlines without DOM mutation |
-| `Intl.Segmenter` | M7 | Sentence-boundary diff |
-| `AbortController` | M6 | Cancel in-flight AI streams |
-| `ReadableStream` | M6 | Process streaming API responses |
-| `window.ai` (Gemini Nano) | M4 | On-device language model |
-| `chrome.storage.local` | M11 | API keys + privacy settings |
+| API                       | Module | What It Does                            |
+| ------------------------- | ------ | --------------------------------------- |
+| `MutationObserver`        | M2     | Detect dynamically added editors        |
+| `Selection` / `Range`     | M3     | Extract selected text + caret rect      |
+| `Shadow DOM` traversal    | M2     | Find editors inside web components      |
+| `CSS Highlight API`       | M8     | Grammar underlines without DOM mutation |
+| `Intl.Segmenter`          | M7     | Sentence-boundary diff                  |
+| `AbortController`         | M6     | Cancel in-flight AI streams             |
+| `ReadableStream`          | M6     | Process streaming API responses         |
+| `window.ai` (Gemini Nano) | M4     | On-device language model                |
+| `chrome.storage.local`    | M11    | API keys + privacy settings             |
 
 ---
 
 ## AI Providers
 
-| Provider | ID | Auth | Streaming | On-Device |
-|----------|----|------|-----------|-----------|
-| OpenAI | `openai` | API key in Options | SSE | ❌ |
-| Google Gemini | `gemini` | API key in Options | REST stream | ❌ |
-| Anthropic Claude | `anthropic` | API key in Options | SSE | ❌ |
-| Gemini Nano | `gemini-nano` | Built-in browser AI | Local | ✅ |
+| Provider         | ID            | Auth                | Streaming   | On-Device |
+| ---------------- | ------------- | ------------------- | ----------- | --------- |
+| OpenAI           | `openai`      | API key in Options  | SSE         | ❌        |
+| Google Gemini    | `gemini`      | API key in Options  | REST stream | ❌        |
+| Anthropic Claude | `anthropic`   | API key in Options  | SSE         | ❌        |
+| Gemini Nano      | `gemini-nano` | Built-in browser AI | Local       | ✅        |
 
 **Failover chain:** Preferred provider → next available → Gemini Nano (if on-device mode enabled).
 
 ### Supported Writing Actions
 
-| Action | ID | Description |
-|--------|----|-------------|
-| Fix Grammar | `grammar` | Correct grammar and spelling |
-| Rewrite | `rewrite` | Improve clarity and flow |
-| Formal Tone | `tone-formal` | Make text more professional |
-| Friendly Tone | `tone-friendly` | Make text warmer |
-| Summarize | `summarize` | Condense to key points |
-| Translate | `translate` | Translate to target language |
-| Expand | `expand` | Add detail and context |
-| Shorten | `shorten` | Reduce word count |
-| Custom | `custom` | User-defined prompt |
+| Action        | ID              | Description                  |
+| ------------- | --------------- | ---------------------------- |
+| Fix Grammar   | `grammar`       | Correct grammar and spelling |
+| Rewrite       | `rewrite`       | Improve clarity and flow     |
+| Formal Tone   | `tone-formal`   | Make text more professional  |
+| Friendly Tone | `tone-friendly` | Make text warmer             |
+| Summarize     | `summarize`     | Condense to key points       |
+| Translate     | `translate`     | Translate to target language |
+| Expand        | `expand`        | Add detail and context       |
+| Shorten       | `shorten`       | Reduce word count            |
+| Custom        | `custom`        | User-defined prompt          |
 
 ---
 
@@ -249,19 +248,19 @@ ai-writing-assistant/
 
 ## Package Map
 
-| Package | Scope | Key Exports |
-|---------|-------|-------------|
-| `@awa/editor-detection` | M2 | `findEditableFields`, `findFieldElement`, site selectors |
-| `@awa/selection` | M3 | `getSelectionInfo`, `replaceSelectionText`, `onSelectionChange` |
-| `@awa/ai-providers` | M4 | `getProvider`, `getAvailableProvider`, provider adapters |
-| `@awa/prompts` | M5 | `buildPrompt`, `buildPromptWithContext` |
-| `@awa/streaming` | M6 | `createStreamRequest`, `abortStream`, `completeStream` |
-| `@awa/diff` | M7 | `diffSentences`, `wordDiff`, `segmentSentences` |
-| `@awa/highlights` | M8 | `applyHighlights`, `applyFieldHighlights`, `clearHighlights` |
-| `@awa/analytics` | M12 | `recordSuggestionShown`, `generateWeeklyReport` |
-| `@awa/messaging` | — | `createMessage`, `onMessage` |
-| `@awa/hooks` | — | `useSettings`, `useAnalytics`, `openSidePanel` |
-| `@awa/extension` | — | CRXJS entry — bundles all contexts |
+| Package                 | Scope | Key Exports                                                     |
+| ----------------------- | ----- | --------------------------------------------------------------- |
+| `@awa/editor-detection` | M2    | `findEditableFields`, `findFieldElement`, site selectors        |
+| `@awa/selection`        | M3    | `getSelectionInfo`, `replaceSelectionText`, `onSelectionChange` |
+| `@awa/ai-providers`     | M4    | `getProvider`, `getAvailableProvider`, provider adapters        |
+| `@awa/prompts`          | M5    | `buildPrompt`, `buildPromptWithContext`                         |
+| `@awa/streaming`        | M6    | `createStreamRequest`, `abortStream`, `completeStream`          |
+| `@awa/diff`             | M7    | `diffSentences`, `wordDiff`, `segmentSentences`                 |
+| `@awa/highlights`       | M8    | `applyHighlights`, `applyFieldHighlights`, `clearHighlights`    |
+| `@awa/analytics`        | M12   | `recordSuggestionShown`, `generateWeeklyReport`                 |
+| `@awa/messaging`        | —     | `createMessage`, `onMessage`                                    |
+| `@awa/hooks`            | —     | `useSettings`, `useAnalytics`, `openSidePanel`                  |
+| `@awa/extension`        | —     | CRXJS entry — bundles all contexts                              |
 
 ---
 
@@ -269,12 +268,12 @@ ai-writing-assistant/
 
 ### Prerequisites
 
-| Tool | Version |
-|------|---------|
-| Node.js | 22 LTS+ |
-| pnpm | 9+ |
-| Google Chrome | Latest |
-| AI API key | OpenAI, Gemini, or Anthropic (one minimum) |
+| Tool          | Version                                    |
+| ------------- | ------------------------------------------ |
+| Node.js       | 22 LTS+                                    |
+| pnpm          | 9+                                         |
+| Google Chrome | Latest                                     |
+| AI API key    | OpenAI, Gemini, or Anthropic (one minimum) |
 
 ### Install
 
@@ -328,15 +327,15 @@ Gmail · Google Docs · Notion · LinkedIn · Slack · GitHub · Reddit · Twitt
 
 ### Available Scripts
 
-| Command | Description |
-|---------|-------------|
-| `pnpm dev` | CRXJS dev server with HMR (port **5174**) |
-| `pnpm build` | Typecheck + production build |
-| `pnpm test` | Vitest unit tests |
-| `pnpm test:e2e` | Playwright E2E |
-| `pnpm lint` | ESLint all workspaces |
-| `pnpm check-types` | TypeScript check |
-| `pnpm format` | Prettier write |
+| Command            | Description                               |
+| ------------------ | ----------------------------------------- |
+| `pnpm dev`         | CRXJS dev server with HMR (port **5174**) |
+| `pnpm build`       | Typecheck + production build              |
+| `pnpm test`        | Vitest unit tests                         |
+| `pnpm test:e2e`    | Playwright E2E                            |
+| `pnpm lint`        | ESLint all workspaces                     |
+| `pnpm check-types` | TypeScript check                          |
+| `pnpm format`      | Prettier write                            |
 
 ### Configure API Keys
 
@@ -348,11 +347,11 @@ Keys stored in `chrome.storage.local` — never sent anywhere except the chosen 
 
 ## Testing
 
-| Layer | Tool | Packages Tested |
-|-------|------|----------------|
-| Unit | Vitest | `diff`, `prompts`, `ai-providers`, `streaming`, `editor-detection`, `analytics` |
-| E2E | Playwright | Browser APIs, manifest validation |
-| Manual | Chrome | Full writing flow on Gmail/Notion |
+| Layer  | Tool       | Packages Tested                                                                 |
+| ------ | ---------- | ------------------------------------------------------------------------------- |
+| Unit   | Vitest     | `diff`, `prompts`, `ai-providers`, `streaming`, `editor-detection`, `analytics` |
+| E2E    | Playwright | Browser APIs, manifest validation                                               |
+| Manual | Chrome     | Full writing flow on Gmail/Notion                                               |
 
 ```bash
 pnpm test && pnpm test:e2e
@@ -389,38 +388,38 @@ pnpm test && pnpm test:e2e
 
 ## Message Passing
 
-| Message Type | Direction | Purpose |
-|-------------|-----------|---------|
-| `SELECTION_CHANGED` | Injected → BG → UI | Live selection relay |
-| `AI_REQUEST` | UI/Content → BG | Start AI stream |
-| `AI_STREAM_CHUNK` | BG → Side Panel | Token-by-token output |
-| `AI_STREAM_DONE` | BG → Content | Final text + diff |
-| `AI_ABORT` | UI → BG | Cancel stream |
-| `APPLY_SUGGESTION` | UI → Content → Injected | Apply to selection |
-| `GET_SETTINGS` / `SAVE_SETTINGS` | Options ↔ BG | API keys + privacy |
-| `GET_ANALYTICS` | Options → BG | Usage counters |
+| Message Type                     | Direction               | Purpose               |
+| -------------------------------- | ----------------------- | --------------------- |
+| `SELECTION_CHANGED`              | Injected → BG → UI      | Live selection relay  |
+| `AI_REQUEST`                     | UI/Content → BG         | Start AI stream       |
+| `AI_STREAM_CHUNK`                | BG → Side Panel         | Token-by-token output |
+| `AI_STREAM_DONE`                 | BG → Content            | Final text + diff     |
+| `AI_ABORT`                       | UI → BG                 | Cancel stream         |
+| `APPLY_SUGGESTION`               | UI → Content → Injected | Apply to selection    |
+| `GET_SETTINGS` / `SAVE_SETTINGS` | Options ↔ BG            | API keys + privacy    |
+| `GET_ANALYTICS`                  | Options → BG            | Usage counters        |
 
 ---
 
 ## Module Progress
 
-| # | Module | Version | Status | Key Deliverables |
-|---|--------|---------|--------|-----------------|
-| 1 | Extension Foundation | v0.1 | ✅ | Monorepo, MV3, CI, all UI surfaces |
-| 2 | Universal Text Detection | v0.2 | ✅ | Shadow DOM, MutationObserver |
-| 3 | Selection & Range Engine | v0.3 | ✅ | Caret rect, selection-aware apply |
-| 4 | LLM Provider Layer | v0.4 | ✅ | 4 providers + failover |
-| 5 | Prompt Engineering | v0.5 | ✅ | 9 action templates |
-| 6 | Streaming Engine | v0.6 | ✅ | AbortController + side panel |
-| 7 | Diff Engine | v0.7 | ⚠️ ~70% | Sentence diff; not Myers/LCS |
-| 8 | Highlight Engine | v0.8 | ⚠️ ~75% | CSS Highlight + input fallback |
-| 9 | Floating Suggestion UI | v0.9 | ⚠️ ~60% | Basic toolbar; no undo/shortcuts |
-| 10 | Context Awareness | v0.9 | ✅ | Hostname-based prompts |
-| 11 | Privacy | v0.9 | ✅ | On-device, allowlist, dictionary masking |
-| 12 | Analytics | v0.9 | ⚠️ ~65% | Counters + weekly report |
-| 13 | Testing | v1.0 | ⚠️ ~60% | Package unit tests; browser-level E2E |
-| 14 | Performance | v1.0 | ⚠️ ~70% | Debounce + lazy init |
-| 15 | Publish | v1.0 | ⚠️ ~60% | Listing docs; no screenshots |
+| #   | Module                   | Version | Status  | Key Deliverables                         |
+| --- | ------------------------ | ------- | ------- | ---------------------------------------- |
+| 1   | Extension Foundation     | v0.1    | ✅      | Monorepo, MV3, CI, all UI surfaces       |
+| 2   | Universal Text Detection | v0.2    | ✅      | Shadow DOM, MutationObserver             |
+| 3   | Selection & Range Engine | v0.3    | ✅      | Caret rect, selection-aware apply        |
+| 4   | LLM Provider Layer       | v0.4    | ✅      | 4 providers + failover                   |
+| 5   | Prompt Engineering       | v0.5    | ✅      | 9 action templates                       |
+| 6   | Streaming Engine         | v0.6    | ✅      | AbortController + side panel             |
+| 7   | Diff Engine              | v0.7    | ⚠️ ~70% | Sentence diff; not Myers/LCS             |
+| 8   | Highlight Engine         | v0.8    | ⚠️ ~75% | CSS Highlight + input fallback           |
+| 9   | Floating Suggestion UI   | v0.9    | ⚠️ ~60% | Basic toolbar; no undo/shortcuts         |
+| 10  | Context Awareness        | v0.9    | ✅      | Hostname-based prompts                   |
+| 11  | Privacy                  | v0.9    | ✅      | On-device, allowlist, dictionary masking |
+| 12  | Analytics                | v0.9    | ⚠️ ~65% | Counters + weekly report                 |
+| 13  | Testing                  | v1.0    | ⚠️ ~60% | Package unit tests; browser-level E2E    |
+| 14  | Performance              | v1.0    | ⚠️ ~70% | Debounce + lazy init                     |
+| 15  | Publish                  | v1.0    | ⚠️ ~60% | Listing docs; no screenshots             |
 
 **Overall: ~82%** · 7 complete · 8 partial · 0 missing
 
@@ -428,14 +427,14 @@ pnpm test && pnpm test:e2e
 
 ## Privacy & Security
 
-| Control | Description |
-|---------|-------------|
-| **On-device only** | Forces Gemini Nano — no cloud API calls |
-| **Site allowlist** | Only run on listed hostnames |
-| **Site blocklist** | Never run on listed hostnames |
-| **Personal dictionary** | Words masked as `[PRIVATE]` before AI calls |
-| **Local analytics** | Counters stored in `chrome.storage` — never transmitted |
-| **API keys** | Stored locally — sent only to chosen provider |
+| Control                 | Description                                             |
+| ----------------------- | ------------------------------------------------------- |
+| **On-device only**      | Forces Gemini Nano — no cloud API calls                 |
+| **Site allowlist**      | Only run on listed hostnames                            |
+| **Site blocklist**      | Never run on listed hostnames                           |
+| **Personal dictionary** | Words masked as `[PRIVATE]` before AI calls             |
+| **Local analytics**     | Counters stored in `chrome.storage` — never transmitted |
+| **API keys**            | Stored locally — sent only to chosen provider           |
 
 ---
 
@@ -449,12 +448,12 @@ GitHub Actions on every push/PR to `main`:
 
 ## Browser Support
 
-| Browser | Status | Notes |
-|---------|--------|-------|
-| Chrome 120+ | ✅ Primary | Full MV3 + Gemini Nano (Chrome 127+) |
-| Edge 120+ | ✅ | Chromium-based |
-| Firefox 109+ | ⚠️ | Manifest ready; AI providers need testing |
-| Safari | ❌ | No MV3 extension support |
+| Browser      | Status     | Notes                                     |
+| ------------ | ---------- | ----------------------------------------- |
+| Chrome 120+  | ✅ Primary | Full MV3 + Gemini Nano (Chrome 127+)      |
+| Edge 120+    | ✅         | Chromium-based                            |
+| Firefox 109+ | ⚠️         | Manifest ready; AI providers need testing |
+| Safari       | ❌         | No MV3 extension support                  |
 
 ---
 
@@ -482,14 +481,14 @@ GitHub Actions on every push/PR to `main`:
 
 ## Documentation
 
-| Doc | Description |
-|-----|-------------|
-| [Architecture](./docs/architecture.md) | Message flows, package boundaries |
-| [Roadmap](./docs/roadmap.md) | 15-module development plan |
-| [Portfolio Overview](../CHROME_EXTENSIONS_PORTFOLIO.md) | All three projects |
+| Doc                                                     | Description                       |
+| ------------------------------------------------------- | --------------------------------- |
+| [Architecture](./docs/architecture.md)                  | Message flows, package boundaries |
+| [Roadmap](./docs/roadmap.md)                            | 15-module development plan        |
+| [Portfolio Overview](../CHROME_EXTENSIONS_PORTFOLIO.md) | All three projects                |
 
 ---
 
 ## License
 
-[MIT](./LICENSE)
+Proprietary - All rights reserved.
