@@ -1,40 +1,6 @@
 # AI Writing Assistant
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
-[![Vite](https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
-[![Chrome Extension](https://img.shields.io/badge/Manifest-V3-4285F4?logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/mv3/)
-
-A **Grammarly-style Manifest V3 Chrome extension** for AI-powered writing assistance across Gmail, Notion, LinkedIn, Slack, GitHub, and any editable webpage — with **streaming LLM responses**, privacy controls, and on-device fallback.
-
-> **Portfolio status:** ~**82% complete** · 7 ✅ · 8 ⚠️ · 0 ❌ (15 modules)
-
----
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Chrome Extension Surfaces](#chrome-extension-surfaces)
-- [Browser APIs Used](#browser-apis-used)
-- [AI Providers](#ai-providers)
-- [Project Structure](#project-structure)
-- [Package Map](#package-map)
-- [Getting Started](#getting-started)
-- [Usage Guide](#usage-guide)
-- [Development](#development)
-- [Testing](#testing)
-- [Architecture](#architecture)
-- [Message Passing](#message-passing)
-- [Module Progress](#module-progress)
-- [Privacy & Security](#privacy--security)
-- [CI/CD](#cicd)
-- [Browser Support](#browser-support)
-- [Interview Highlights](#interview-highlights)
-- [Remaining Work](#remaining-work)
-- [Documentation](#documentation)
-- [License](#license)
+A Grammarly-style Manifest V3 Chrome extension for AI-powered writing assistance across Gmail, Notion, LinkedIn, Slack, GitHub, and any editable webpage with streaming LLM responses, privacy controls, and on-device fallback.
 
 ---
 
@@ -48,26 +14,24 @@ Supports **9 writing actions** across **4 AI providers** with automatic failover
 
 ## Features
 
-| Feature                    | Status | Implementation                                           |
-| -------------------------- | ------ | -------------------------------------------------------- |
-| Universal editor detection | ✅     | Shadow DOM, MutationObserver, site selectors             |
-| Selection & Range engine   | ✅     | `selectionchange`, caret rect, range-aware apply         |
-| OpenAI streaming           | ✅     | SSE adapter in `@awa/ai-providers`                       |
-| Google Gemini streaming    | ✅     | REST streaming adapter                                   |
-| Anthropic Claude streaming | ✅     | SSE adapter                                              |
-| Gemini Nano on-device      | ✅     | `window.ai` LanguageModel API                            |
-| Provider failover          | ✅     | Lazy init + automatic fallback chain                     |
-| 9 writing actions          | ✅     | Grammar, rewrite, tone, summarize, etc.                  |
-| Real-time streaming        | ✅     | `AbortController` + side panel rendering                 |
-| Sentence-level diff        | ⚠️     | `Intl.Segmenter`; not Myers/LCS                          |
-| CSS Highlight API          | ⚠️     | Contenteditable; input/textarea outline fallback         |
-| Floating toolbar           | ⚠️     | Shadow DOM quick actions; no undo UI                     |
-| Context-aware prompts      | ✅     | Hostname → email, social, code, resume                   |
-| Privacy controls           | ✅     | On-device mode, allowlist, blocklist, dictionary masking |
-| Local analytics            | ⚠️     | Counters + weekly report; no reading level               |
-| Debounced detection        | ✅     | 300ms MutationObserver debounce                          |
-| Firefox manifest           | ✅     | `browser_specific_settings.gecko`                        |
-| Chrome Store assets        | ⚠️     | Listing copy; no screenshot PNGs                         |
+- Universal editor detection (Shadow DOM, MutationObserver, site selectors)
+- Selection & Range engine (selectionchange, caret rect, range-aware apply)
+- OpenAI streaming (SSE adapter)
+- Google Gemini streaming (REST streaming adapter)
+- Anthropic Claude streaming (SSE adapter)
+- Gemini Nano on-device (window.ai LanguageModel API)
+- Provider failover (Lazy init + automatic fallback chain)
+- 9 writing actions (Grammar, rewrite, tone, summarize, etc.)
+- Real-time streaming (AbortController + side panel rendering)
+- Sentence-level diff (Intl.Segmenter)
+- CSS Highlight API (Contenteditable; input/textarea outline fallback)
+- Floating toolbar (Shadow DOM quick actions)
+- Context-aware prompts (Hostname → email, social, code, resume)
+- Privacy controls (On-device mode, allowlist, blocklist, dictionary masking)
+- Local analytics (Counters + weekly report)
+- Debounced detection (300ms MutationObserver debounce)
+- Firefox manifest (browser_specific_settings.gecko)
+- Chrome Store assets (Listing copy)
 
 ---
 
