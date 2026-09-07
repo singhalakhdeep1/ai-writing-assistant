@@ -32,17 +32,18 @@ Productivity
 
 English
 
-## Screenshots Needed
+## Screenshots
 
-1. Floating toolbar on Gmail compose
-2. Side panel with streaming suggestion
-3. Options page with provider settings
-4. Diff preview with highlighted changes
+Run `node scripts/capture-screenshots.mjs` to auto-generate all store assets:
 
-## Promotional Images
-
-- Small tile: 440×280
-- Marquee: 1400×560
+| File | Size | Description |
+|------|------|-------------|
+| `store/screenshots/01-toolbar-gmail.png` | 1280×800 | Floating toolbar on Gmail compose |
+| `store/screenshots/02-side-panel-streaming.png` | 1280×800 | Side panel with streaming suggestion |
+| `store/screenshots/03-options-providers.png` | 1280×800 | Options page with provider settings |
+| `store/screenshots/04-diff-preview.png` | 1280×800 | Diff preview with highlighted changes |
+| `store/screenshots/promo-tile-440x280.png` | 440×280 | Small promotional tile |
+| `store/screenshots/promo-marquee-1400x560.png` | 1400×560 | Marquee promotional banner |
 
 ## Privacy Policy URL
 
