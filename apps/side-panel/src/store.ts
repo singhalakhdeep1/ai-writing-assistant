@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { createMessage, sendToBackground } from "@awa/messaging";
+import { createMessage, sendToBackground, sendToTab } from "@awa/messaging";
 import { recordSuggestionRejected } from "@awa/analytics";
 
 interface SidePanelState {
@@ -7,6 +7,13 @@ interface SidePanelState {
   originalText: string;
   acceptSuggestion: (modified: string, requestId: string) => Promise<void>;
   rejectSuggestion: () => Promise<void>;
+  /** Reverts the last applied suggestion on the active tab. Resolves to whether anything was undone. */
+  undoLastSuggestion: () => Promise<boolean>;
+}
+
+async function getActiveTabId(): Promise<number | undefined> {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  return tab?.id;
 }
 
 export const useSidePanelStore = create<SidePanelState>(() => ({
@@ -14,14 +21,13 @@ export const useSidePanelStore = create<SidePanelState>(() => ({
   originalText: "",
 
   acceptSuggestion: async (modified, requestId) => {
-    const tabResponse = await sendToBackground(createMessage("GET_TAB_INFO"));
-    const tabId = (tabResponse.data as { tabId: number })?.tabId;
+    const tabId = await getActiveTabId();
     if (!tabId) return;
 
     const selection = await sendToBackground(createMessage("GET_SELECTION"));
-    const fieldId = (selection.data as { fieldId: string })?.fieldId ?? "";
+    const fieldId = (selection.data as { fieldId: string } | null)?.fieldId ?? "";
 
-    await chrome.tabs.sendMessage(
+    await sendToTab(
       tabId,
       createMessage("APPLY_SUGGESTION", {
         fieldId,
@@ -34,10 +40,14 @@ export const useSidePanelStore = create<SidePanelState>(() => ({
 
   rejectSuggestion: async () => {
     await recordSuggestionRejected();
-    await chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
-      if (tab?.id) {
-        void chrome.tabs.sendMessage(tab.id, createMessage("CLEAR_HIGHLIGHTS"));
-      }
-    });
+    const tabId = await getActiveTabId();
+    if (tabId) await sendToTab(tabId, createMessage("CLEAR_HIGHLIGHTS"));
+  },
+
+  undoLastSuggestion: async () => {
+    const tabId = await getActiveTabId();
+    if (!tabId) return false;
+    const response = await sendToTab(tabId, createMessage("UNDO_SUGGESTION"));
+    return response?.success ?? false;
   },
 }));

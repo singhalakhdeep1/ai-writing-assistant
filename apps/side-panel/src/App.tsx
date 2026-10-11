@@ -1,34 +1,52 @@
-import {
-  useActiveTab,
-  useAIStream,
-  useExtensionStatus,
-  useSelection,
-} from "@awa/hooks";
+import { useActiveTab, useAIStream, useExtensionStatus, useSelection } from "@awa/hooks";
 import { Button } from "@awa/ui/button";
 import { Card } from "@awa/ui/card";
 import { Header } from "@awa/ui/header";
 import { StatusBadge } from "@awa/ui/status-badge";
 import { truncate } from "@awa/utils";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { DiffView } from "./DiffView";
 import { useSidePanelStore } from "./store";
 
 export function App() {
   const { isConnected, isLoading } = useExtensionStatus();
   const { tabInfo } = useActiveTab();
   const { selection } = useSelection();
-  const { streamText, isStreaming, error, diffs, abortStream, requestId, originalText } =
-    useAIStream();
-  const { acceptSuggestion, rejectSuggestion } = useSidePanelStore();
+  const {
+    streamText,
+    isStreaming,
+    error,
+    diffs,
+    abortStream,
+    requestId,
+    originalText,
+    explanation,
+    isExplaining,
+    explain,
+  } = useAIStream();
+  const { acceptSuggestion, rejectSuggestion, undoLastSuggestion } = useSidePanelStore();
+  const [undoMessage, setUndoMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (selection?.text) {
-      useSidePanelStore.setState({ originalText: selection.text, fieldId: selection.fieldId ?? "" });
+      useSidePanelStore.setState({
+        originalText: selection.text,
+        fieldId: selection.fieldId ?? "",
+      });
     }
   }, [selection]);
 
   const status = isLoading ? "loading" : isConnected ? "connected" : "disconnected";
   const statusLabel = isLoading ? "Checking…" : isConnected ? "Connected" : "Disconnected";
   const changedDiffs = diffs.filter((d) => d.changed);
+  const baseText = originalText || selection?.text || "";
+  const canReview = Boolean(streamText) && !isStreaming && Boolean(requestId);
+
+  const handleUndo = async () => {
+    const ok = await undoLastSuggestion();
+    setUndoMessage(ok ? "Reverted the last applied suggestion." : "Nothing to undo.");
+    setTimeout(() => setUndoMessage(null), 3000);
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -52,37 +70,52 @@ export function App() {
             <div className="mb-2 flex items-center gap-2">
               <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-blue-500" />
               <span className="text-xs text-slate-500">Generating…</span>
-              <Button variant="ghost" className="ml-auto text-xs" onClick={() => void abortStream()}>
+              <Button
+                variant="ghost"
+                className="ml-auto text-xs"
+                onClick={() => void abortStream()}
+              >
                 Cancel
               </Button>
             </div>
           )}
-          <p className="whitespace-pre-wrap text-sm text-slate-800">
+          <p className="whitespace-pre-wrap text-sm text-slate-800" data-testid="stream-text">
             {streamText || (isStreaming ? "" : "Run an action from the popup or floating toolbar")}
           </p>
         </Card>
 
-        {changedDiffs.length > 0 && (
-          <Card title="Changes" description={`${changedDiffs.length} sentence(s) modified`}>
-            <ul className="space-y-2 text-sm">
-              {changedDiffs.map((d, i) => (
-                <li key={i} className="rounded border border-slate-100 p-2">
-                  <p className="text-slate-400 line-through">{truncate(d.original, 80)}</p>
-                  <p className="text-green-700">{truncate(d.modified, 80)}</p>
-                </li>
-              ))}
-            </ul>
+        {canReview && baseText && (
+          <Card title="Changes" description="Word-level diff (Myers)">
+            <DiffView original={baseText} modified={streamText} />
+            {changedDiffs.length > 0 && (
+              <p className="mt-2 text-xs text-slate-500">
+                {changedDiffs.length} sentence(s) modified
+              </p>
+            )}
           </Card>
         )}
 
-        {streamText && !isStreaming && requestId && (
+        {canReview && (
+          <Card title="Why this change?" description="AI explanation of the suggestion">
+            {explanation ? (
+              <p className="whitespace-pre-wrap text-sm text-slate-700" data-testid="explanation">
+                {explanation}
+              </p>
+            ) : (
+              <Button
+                variant="secondary"
+                disabled={isExplaining || !baseText}
+                onClick={() => void explain(baseText, streamText)}
+              >
+                {isExplaining ? "Explaining…" : "Explain why"}
+              </Button>
+            )}
+          </Card>
+        )}
+
+        {canReview && requestId && (
           <div className="flex gap-2">
-            <Button
-              className="flex-1"
-              onClick={() =>
-                void acceptSuggestion(streamText, requestId)
-              }
-            >
+            <Button className="flex-1" onClick={() => void acceptSuggestion(streamText, requestId)}>
               Accept
             </Button>
             <Button variant="secondary" className="flex-1" onClick={() => void rejectSuggestion()}>
@@ -90,6 +123,13 @@ export function App() {
             </Button>
           </div>
         )}
+
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" className="text-xs" onClick={() => void handleUndo()}>
+            ↶ Undo last applied
+          </Button>
+          {undoMessage && <span className="text-xs text-slate-500">{undoMessage}</span>}
+        </div>
       </div>
     </div>
   );

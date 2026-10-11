@@ -7,7 +7,7 @@ export interface SentenceDiff {
 
 /** Diff operation types for Myers/LCS algorithm */
 export interface DiffOperation {
-  type: 'insert' | 'delete' | 'equal';
+  type: "insert" | "delete" | "equal";
   text: string;
 }
 
@@ -39,7 +39,10 @@ export function getChangedSentences(original: string, modified: string): Sentenc
 }
 
 /** Simple word-level diff for display (Module 7). */
-export function wordDiff(original: string, modified: string): { added: string[]; removed: string[] } {
+export function wordDiff(
+  original: string,
+  modified: string,
+): { added: string[]; removed: string[] } {
   const origWords = new Set(original.split(/\s+/));
   const modWords = new Set(modified.split(/\s+/));
   return {
@@ -56,40 +59,39 @@ export function myersDiff<T>(original: T[], modified: T[]): DiffOperation[] {
   const m = original.length;
   const n = modified.length;
 
-  // Edge cases
   if (m === 0) {
-    return modified.map(text => ({ type: 'insert' as const, text: String(text) }));
+    return modified.map((text) => ({ type: "insert" as const, text: String(text) }));
   }
   if (n === 0) {
-    return original.map(text => ({ type: 'delete' as const, text: String(text) }));
+    return original.map((text) => ({ type: "delete" as const, text: String(text) }));
   }
 
   const max = m + n;
-  const v: Record<number, number> = { 1: 0 };
-  const trace: number[][] = [];
+  const offset = max + 1;
+  const v = new Int32Array(2 * max + 3);
+  const trace: Int32Array[] = [];
 
   for (let d = 0; d <= max; d++) {
-    trace.push([...Object.values(v)]);
+    trace.push(v.slice());
 
     for (let k = -d; k <= d; k += 2) {
       let x: number;
-      if (k === -d || (k !== d && v[k - 1] < v[k + 1])) {
-        x = v[k + 1];
+      if (k === -d || (k !== d && v[offset + k - 1]! < v[offset + k + 1]!)) {
+        x = v[offset + k + 1]!;
       } else {
-        x = v[k - 1] + 1;
+        x = v[offset + k - 1]! + 1;
       }
 
       let y = x - k;
-
       while (x < m && y < n && original[x] === modified[y]) {
         x++;
         y++;
       }
 
-      v[k] = x;
+      v[offset + k] = x;
 
-      if (x === m && y === n) {
-        return backtrack(trace, original, modified);
+      if (x >= m && y >= n) {
+        return backtrack(trace, original, modified, offset);
       }
     }
   }
@@ -97,47 +99,43 @@ export function myersDiff<T>(original: T[], modified: T[]): DiffOperation[] {
   return [];
 }
 
-/**
- * Backtrack through the trace to produce the diff operations
- */
-function backtrack<T>(trace: number[][], original: T[], modified: T[]): DiffOperation[] {
-  const m = original.length;
-  const n = modified.length;
+/** Walks the saved V snapshots backwards to rebuild the edit script. */
+function backtrack<T>(
+  trace: Int32Array[],
+  original: T[],
+  modified: T[],
+  offset: number,
+): DiffOperation[] {
   const operations: DiffOperation[] = [];
-  
-  let x = m;
-  let y = n;
+  let x = original.length;
+  let y = modified.length;
 
   for (let d = trace.length - 1; d >= 0; d--) {
-    const v = trace[d];
+    const v = trace[d]!;
     const k = x - y;
 
-    let prevK: number;
-    if (k === -d || (k !== d && v[k - 1] < v[k + 1])) {
-      prevK = k + 1;
-    } else {
-      prevK = k - 1;
-    }
-
-    const prevX = v[prevK];
+    const prevK = k === -d || (k !== d && v[offset + k - 1]! < v[offset + k + 1]!) ? k + 1 : k - 1;
+    const prevX = v[offset + prevK]!;
     const prevY = prevX - prevK;
 
     while (x > prevX && y > prevY) {
-      operations.unshift({ type: 'equal', text: String(original[x - 1]) });
+      operations.push({ type: "equal", text: String(original[x - 1]) });
       x--;
       y--;
     }
 
-    if (x > prevX) {
-      operations.unshift({ type: 'delete', text: String(original[x - 1]) });
-      x--;
-    } else if (y > prevY) {
-      operations.unshift({ type: 'insert', text: String(modified[y - 1]) });
-      y--;
+    if (d > 0) {
+      if (x === prevX) {
+        operations.push({ type: "insert", text: String(modified[y - 1]) });
+        y--;
+      } else {
+        operations.push({ type: "delete", text: String(original[x - 1]) });
+        x--;
+      }
     }
   }
 
-  return operations;
+  return operations.reverse();
 }
 
 /**
@@ -147,43 +145,40 @@ function backtrack<T>(trace: number[][], original: T[], modified: T[]): DiffOper
 export function lcs<T>(seq1: T[], seq2: T[]): T[] {
   const m = seq1.length;
   const n = seq2.length;
-  const dp: number[][] = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+  const dp: number[][] = Array.from({ length: m + 1 }, () => new Array<number>(n + 1).fill(0));
+  const at = (i: number, j: number): number => dp[i]![j]!;
 
-  // Build DP table
   for (let i = 1; i <= m; i++) {
     for (let j = 1; j <= n; j++) {
-      if (seq1[i - 1] === seq2[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
+      dp[i]![j] =
+        seq1[i - 1] === seq2[j - 1] ? at(i - 1, j - 1) + 1 : Math.max(at(i - 1, j), at(i, j - 1));
     }
   }
 
-  // Backtrack to find LCS
-  const lcs: T[] = [];
-  let i = m, j = n;
+  const result: T[] = [];
+  let i = m;
+  let j = n;
   while (i > 0 && j > 0) {
     if (seq1[i - 1] === seq2[j - 1]) {
-      lcs.unshift(seq1[i - 1]);
+      result.push(seq1[i - 1] as T);
       i--;
       j--;
-    } else if (dp[i - 1][j] > dp[i][j - 1]) {
+    } else if (at(i - 1, j) > at(i, j - 1)) {
       i--;
     } else {
       j--;
     }
   }
 
-  return lcs;
+  return result.reverse();
 }
 
 /**
  * Character-level Myers diff for fine-grained text comparison
  */
 export function charDiff(original: string, modified: string): DiffOperation[] {
-  const origChars = original.split('');
-  const modChars = modified.split('');
+  const origChars = original.split("");
+  const modChars = modified.split("");
   return myersDiff(origChars, modChars);
 }
 

@@ -10,7 +10,7 @@
  * TODO: Replace placeholder HTML with your actual extension pages/popup once built.
  */
 
-import { chromium } from "playwright";
+import { chromium } from "@playwright/test";
 import path from "path";
 import { fileURLToPath } from "url";
 

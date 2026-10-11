@@ -1,4 +1,12 @@
 import type { AnalyticsSnapshot } from "@awa/types";
+import {
+  classifyEdits,
+  MISTAKE_LABELS,
+  summarizeMistakes,
+  type MistakeCategory,
+} from "./taxonomy.js";
+
+export * from "./taxonomy.js";
 
 const STORAGE_KEY = "awa:analytics";
 
@@ -29,6 +37,68 @@ export async function recordSuggestionAccepted(): Promise<void> {
   const snapshot = await getAnalytics();
   snapshot.suggestionsAccepted += 1;
   await saveAnalytics(snapshot);
+}
+
+/**
+ * Records an accepted suggestion together with what it fixed: mistake taxonomy
+ * and before/after reading level (Module 12 — all local).
+ */
+export async function recordAcceptedEdit(original: string, modified: string): Promise<void> {
+  const snapshot = await getAnalytics();
+  snapshot.suggestionsAccepted += 1;
+
+  const mistakes = summarizeMistakes(classifyEdits(original, modified));
+  snapshot.mistakes = snapshot.mistakes ?? {};
+  for (const [category, count] of Object.entries(mistakes)) {
+    snapshot.mistakes[category] = (snapshot.mistakes[category] ?? 0) + count;
+  }
+
+  if (original.trim() && modified.trim()) {
+    const before = calculateReadingLevel(original);
+    const after = calculateReadingLevel(modified);
+    const totals = snapshot.readingLevel ?? {
+      samples: 0,
+      gradeBefore: 0,
+      gradeAfter: 0,
+      easeBefore: 0,
+      easeAfter: 0,
+    };
+    totals.samples += 1;
+    totals.gradeBefore += before.fleschKincaidGrade;
+    totals.gradeAfter += after.fleschKincaidGrade;
+    totals.easeBefore += before.fleschReadingEase;
+    totals.easeAfter += after.fleschReadingEase;
+    snapshot.readingLevel = totals;
+  }
+
+  await saveAnalytics(snapshot);
+}
+
+/** Average reading level before/after accepted edits, or null if there is no data. */
+export function getReadingLevelSummary(snapshot: AnalyticsSnapshot): {
+  gradeBefore: number;
+  gradeAfter: number;
+  easeBefore: number;
+  easeAfter: number;
+} | null {
+  const totals = snapshot.readingLevel;
+  if (!totals || totals.samples === 0) return null;
+  const avg = (sum: number): number => Math.round((sum / totals.samples) * 10) / 10;
+  return {
+    gradeBefore: avg(totals.gradeBefore),
+    gradeAfter: avg(totals.gradeAfter),
+    easeBefore: avg(totals.easeBefore),
+    easeAfter: avg(totals.easeAfter),
+  };
+}
+
+/** Mistake categories sorted by frequency, most common first. */
+export function getTopMistakes(
+  snapshot: AnalyticsSnapshot,
+): Array<{ category: string; count: number }> {
+  return Object.entries(snapshot.mistakes ?? {})
+    .map(([category, count]) => ({ category, count }))
+    .sort((x, y) => y.count - x.count);
 }
 
 /** Records a suggestion rejected event. */
@@ -72,9 +142,28 @@ export function generateWeeklyReport(snapshot: AnalyticsSnapshot): string {
     `Accepted: ${snapshot.suggestionsAccepted}`,
     `Rejected: ${snapshot.suggestionsRejected}`,
     `Acceptance rate: ${rate}%`,
-    rate >= 70 ? "Great job — you're using suggestions effectively!" : "Tip: try grammar fixes on shorter selections first.",
+    ...reportDetails(snapshot),
+    rate >= 70
+      ? "Great job — you're using suggestions effectively!"
+      : "Tip: try grammar fixes on shorter selections first.",
   ];
   return lines.join("\n");
+}
+
+function reportDetails(snapshot: AnalyticsSnapshot): string[] {
+  const lines: string[] = [];
+  const top = getTopMistakes(snapshot).slice(0, 3);
+  if (top.length > 0) {
+    const label = (c: string): string => MISTAKE_LABELS[c as MistakeCategory] ?? c;
+    lines.push(`Top fixes: ${top.map((m) => `${label(m.category)} (${m.count})`).join(", ")}`);
+  }
+  const level = getReadingLevelSummary(snapshot);
+  if (level) {
+    lines.push(
+      `Reading grade: ${level.gradeBefore} -> ${level.gradeAfter} (ease ${level.easeBefore} -> ${level.easeAfter})`,
+    );
+  }
+  return lines;
 }
 
 /** Resets analytics counters. */
@@ -100,9 +189,9 @@ async function saveAnalytics(snapshot: AnalyticsSnapshot): Promise<void> {
  * Uses multiple readability formulas for comprehensive analysis
  */
 export function calculateReadingLevel(text: string): ReadingLevelMetrics {
-  const words = text.split(/\s+/).filter(w => w.length > 0);
-  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
-  const syllables = words.map(w => countSyllables(w));
+  const words = text.split(/\s+/).filter((w) => w.length > 0);
+  const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 0);
+  const syllables = words.map((w) => countSyllables(w));
 
   const totalWords = words.length;
   const totalSentences = sentences.length || 1;
@@ -111,24 +200,31 @@ export function calculateReadingLevel(text: string): ReadingLevelMetrics {
   const averageSyllablesPerWord = totalSyllables / totalWords || 0;
 
   // Count complex words (3+ syllables, excluding common suffixes)
-  const complexWords = words.filter(w => {
+  const complexWords = words.filter((w) => {
     const s = countSyllables(w);
-    return s >= 3 && !w.toLowerCase().endsWith('ing') && 
-           !w.toLowerCase().endsWith('ed') && !w.toLowerCase().endsWith('es');
+    return (
+      s >= 3 &&
+      !w.toLowerCase().endsWith("ing") &&
+      !w.toLowerCase().endsWith("ed") &&
+      !w.toLowerCase().endsWith("es")
+    );
   }).length;
 
   // Flesch-Kincaid Grade Level
   const fleschKincaidGrade = 0.39 * averageSentenceLength + 11.8 * averageSyllablesPerWord - 15.59;
 
   // Flesch Reading Ease
-  const fleschReadingEase = 206.835 - 1.015 * averageSentenceLength - 84.6 * averageSyllablesPerWord;
+  const fleschReadingEase =
+    206.835 - 1.015 * averageSentenceLength - 84.6 * averageSyllablesPerWord;
 
   // Gunning Fog Index
   const gunningFogIndex = 0.4 * (averageSentenceLength + 100 * (complexWords / totalWords));
 
   // Coleman-Liau Index
-  const avgLettersPerWord = words.reduce((sum, w) => sum + w.replace(/[^a-z]/gi, '').length, 0) / totalWords;
-  const colemanLiauIndex = 0.0588 * avgLettersPerWord * 100 - 0.296 * (totalSentences / totalWords) * 100 - 15.8;
+  const avgLettersPerWord =
+    words.reduce((sum, w) => sum + w.replace(/[^a-z]/gi, "").length, 0) / totalWords;
+  const colemanLiauIndex =
+    0.0588 * avgLettersPerWord * 100 - 0.296 * (totalSentences / totalWords) * 100 - 15.8;
 
   // Automated Readability Index
   const avgCharsPerWord = words.reduce((sum, w) => sum + w.length, 0) / totalWords;
@@ -154,11 +250,11 @@ export function calculateReadingLevel(text: string): ReadingLevelMetrics {
  * Uses heuristic approach for English
  */
 function countSyllables(word: string): number {
-  word = word.toLowerCase().replace(/[^a-z]/g, '');
+  word = word.toLowerCase().replace(/[^a-z]/g, "");
   if (word.length <= 3) return 1;
 
-  word = word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '');
-  word = word.replace(/^y/, '');
+  word = word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, "");
+  word = word.replace(/^y/, "");
   const matches = word.match(/[aeiouy]{1,2}/g);
   return matches ? matches.length : 1;
 }
@@ -174,41 +270,41 @@ export function getReadingLevelDescription(metrics: ReadingLevelMetrics): {
   const grade = metrics.fleschKincaidGrade;
   const ease = metrics.fleschReadingEase;
 
-  let gradeLevel = '';
-  let easeLevel = '';
-  let audience = '';
+  let gradeLevel = "";
+  let easeLevel = "";
+  let audience = "";
 
   if (grade <= 6) {
-    gradeLevel = 'Elementary School (K-6)';
-    audience = 'General audience, children';
+    gradeLevel = "Elementary School (K-6)";
+    audience = "General audience, children";
   } else if (grade <= 8) {
-    gradeLevel = 'Middle School (7-8)';
-    audience = 'General audience';
+    gradeLevel = "Middle School (7-8)";
+    audience = "General audience";
   } else if (grade <= 12) {
-    gradeLevel = 'High School (9-12)';
-    audience = 'General adult audience';
+    gradeLevel = "High School (9-12)";
+    audience = "General adult audience";
   } else if (grade <= 14) {
-    gradeLevel = 'College (13-14)';
-    audience = 'College-educated adults';
+    gradeLevel = "College (13-14)";
+    audience = "College-educated adults";
   } else {
-    gradeLevel = 'Graduate Level (15+)';
-    audience = 'Specialized/academic audience';
+    gradeLevel = "Graduate Level (15+)";
+    audience = "Specialized/academic audience";
   }
 
   if (ease >= 90) {
-    easeLevel = 'Very Easy';
+    easeLevel = "Very Easy";
   } else if (ease >= 80) {
-    easeLevel = 'Easy';
+    easeLevel = "Easy";
   } else if (ease >= 70) {
-    easeLevel = 'Fairly Easy';
+    easeLevel = "Fairly Easy";
   } else if (ease >= 60) {
-    easeLevel = 'Standard';
+    easeLevel = "Standard";
   } else if (ease >= 50) {
-    easeLevel = 'Fairly Difficult';
+    easeLevel = "Fairly Difficult";
   } else if (ease >= 30) {
-    easeLevel = 'Difficult';
+    easeLevel = "Difficult";
   } else {
-    easeLevel = 'Very Difficult';
+    easeLevel = "Very Difficult";
   }
 
   return {
@@ -221,7 +317,10 @@ export function getReadingLevelDescription(metrics: ReadingLevelMetrics): {
 /**
  * Compare reading levels between original and modified text
  */
-export function compareReadingLevels(original: string, modified: string): {
+export function compareReadingLevels(
+  original: string,
+  modified: string,
+): {
   original: ReadingLevelMetrics;
   modified: ReadingLevelMetrics;
   improvement: {

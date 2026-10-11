@@ -37,20 +37,17 @@ export const PROMPT_TEMPLATES: Record<WritingAction, PromptTemplate> = {
   },
   "tone-formal": {
     action: "tone-formal",
-    system:
-      "Rewrite the text in a formal, professional tone. Return only the rewritten text.",
+    system: "Rewrite the text in a formal, professional tone. Return only the rewritten text.",
     userPrefix: "Make this text formal:\n\n",
   },
   "tone-friendly": {
     action: "tone-friendly",
-    system:
-      "Rewrite the text in a friendly, casual tone. Return only the rewritten text.",
+    system: "Rewrite the text in a friendly, casual tone. Return only the rewritten text.",
     userPrefix: "Make this text friendly:\n\n",
   },
   rewrite: {
     action: "rewrite",
-    system:
-      "Rewrite the text to improve clarity and flow. Return only the rewritten text.",
+    system: "Rewrite the text to improve clarity and flow. Return only the rewritten text.",
     userPrefix: "Rewrite this text:\n\n",
   },
   summarize: {
@@ -73,6 +70,12 @@ export const PROMPT_TEMPLATES: Record<WritingAction, PromptTemplate> = {
     system: "Shorten the text while preserving meaning. Return only the shortened text.",
     userPrefix: "Shorten this text:\n\n",
   },
+  explain: {
+    action: "explain",
+    system:
+      "You are a writing coach. Given an original text and a suggested revision, explain in 2-4 short bullet points why the changes improve the text (grammar rule, clarity, tone). Do not rewrite the text.",
+    userPrefix: "",
+  },
   custom: {
     action: "custom",
     system: "Follow the user's instructions precisely. Return only the result.",
@@ -83,7 +86,10 @@ export const PROMPT_TEMPLATES: Record<WritingAction, PromptTemplate> = {
 /** Infers writing context from hostname (Module 10). */
 export function inferWritingContext(hostname: string): WritingContext {
   const host = hostname.toLowerCase();
-  for (const [context, hosts] of Object.entries(CONTEXT_HOSTNAMES) as [WritingContext, string[]][]) {
+  for (const [context, hosts] of Object.entries(CONTEXT_HOSTNAMES) as [
+    WritingContext,
+    string[],
+  ][]) {
     if (context === "general") continue;
     if (hosts.some((h) => host === h || host.endsWith(`.${h}`))) return context;
   }

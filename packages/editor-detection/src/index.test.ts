@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { toSerializableField } from "./index";
+import { toSerializableField } from "./index.js";
 import type { EditableField } from "@awa/types";
 
 describe("@awa/editor-detection", () => {
@@ -24,7 +24,7 @@ describe("@awa/editor-detection", () => {
 
 describe("SITE_SELECTORS", () => {
   it("includes major platform selectors", async () => {
-    const { SITE_SELECTORS } = await import("./index");
+    const { SITE_SELECTORS } = await import("./index.js");
     expect(SITE_SELECTORS["mail.google.com"]).toBeDefined();
     expect(SITE_SELECTORS["github.com"]).toBeDefined();
     expect(SITE_SELECTORS["www.notion.so"]).toBeDefined();

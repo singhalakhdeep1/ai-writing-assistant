@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { getAvailableProvider, getAllProviders, registerProvider } from "./index";
-import type { AIProviderAdapter } from "./index";
+import { getAvailableProvider, getAllProviders, registerProvider } from "./index.js";
+import type { AIProviderAdapter } from "./index.js";
 
 vi.mock("./storage", () => ({
   getProviderKeys: vi.fn().mockResolvedValue({ openai: "test-key" }),

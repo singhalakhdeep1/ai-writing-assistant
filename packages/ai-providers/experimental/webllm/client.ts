@@ -1,6 +1,6 @@
 // WebLLM client for browser-based LLM inference
 
-import * as webllm from '@mlc-ai/web-llm';
+import * as webllm from "@mlc-ai/web-llm";
 
 export interface WebLLMConfig {
   model?: string;
@@ -15,7 +15,7 @@ export class WebLLMClient {
 
   constructor(config: WebLLMConfig = {}) {
     this.config = {
-      model: 'Llama-3-8B-Instruct-q4f16_1-MLC',
+      model: "Llama-3-8B-Instruct-q4f16_1-MLC",
       temperature: 0.7,
       maxTokens: 1024,
       ...config,
@@ -26,7 +26,7 @@ export class WebLLMClient {
     if (this.initialized) return;
 
     const initProgressCallback = (report: any) => {
-      console.log('WebLLM init progress:', report);
+      console.log("WebLLM init progress:", report);
     };
 
     this.engine = await webllm.CreateMLCEngine();
@@ -40,9 +40,7 @@ export class WebLLMClient {
   async generate(prompt: string): Promise<string> {
     if (!this.initialized) await this.init();
 
-    const messages = [
-      { role: 'user', content: prompt },
-    ];
+    const messages = [{ role: "user", content: prompt }];
 
     const reply = await this.engine.chat.completions.create({
       messages,
@@ -53,9 +51,7 @@ export class WebLLMClient {
     return reply.choices[0].message.content;
   }
 
-  async chat(
-    messages: Array<{ role: string; content: string }>
-  ): Promise<string> {
+  async chat(messages: Array<{ role: string; content: string }>): Promise<string> {
     if (!this.initialized) await this.init();
 
     const reply = await this.engine.chat.completions.create({
@@ -69,7 +65,7 @@ export class WebLLMClient {
 
   async streamChat(
     messages: Array<{ role: string; content: string }>,
-    onChunk: (chunk: string) => void
+    onChunk: (chunk: string) => void,
   ): Promise<void> {
     if (!this.initialized) await this.init();
 

@@ -27,11 +27,11 @@ export interface CohereResponse {
 
 export class CohereClient {
   private config: CohereConfig;
-  private baseUrl = 'https://api.cohere.ai/v1';
+  private baseUrl = "https://api.cohere.ai/v1";
 
   constructor(config: CohereConfig) {
     this.config = {
-      model: 'command',
+      model: "command",
       temperature: 0.7,
       maxTokens: 1024,
       ...config,
@@ -40,11 +40,11 @@ export class CohereClient {
 
   async generate(prompt: string): Promise<CohereResponse> {
     const response = await fetch(`${this.baseUrl}/generate`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${this.config.apiKey}`,
-        'Content-Type': 'application/json',
-        'X-Client-Name': 'ai-writing-assistant',
+        Authorization: `Bearer ${this.config.apiKey}`,
+        "Content-Type": "application/json",
+        "X-Client-Name": "ai-writing-assistant",
       },
       body: JSON.stringify({
         model: this.config.model,
@@ -63,14 +63,14 @@ export class CohereClient {
 
   async chat(
     message: string,
-    conversationHistory?: Array<{ role: string; message: string }>
+    conversationHistory?: Array<{ role: string; message: string }>,
   ): Promise<CohereResponse> {
     const response = await fetch(`${this.baseUrl}/chat`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${this.config.apiKey}`,
-        'Content-Type': 'application/json',
-        'X-Client-Name': 'ai-writing-assistant',
+        Authorization: `Bearer ${this.config.apiKey}`,
+        "Content-Type": "application/json",
+        "X-Client-Name": "ai-writing-assistant",
       },
       body: JSON.stringify({
         model: this.config.model,
@@ -88,16 +88,13 @@ export class CohereClient {
     return await response.json();
   }
 
-  async streamGenerate(
-    prompt: string,
-    onChunk: (chunk: string) => void
-  ): Promise<void> {
+  async streamGenerate(prompt: string, onChunk: (chunk: string) => void): Promise<void> {
     const response = await fetch(`${this.baseUrl}/generate`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${this.config.apiKey}`,
-        'Content-Type': 'application/json',
-        'X-Client-Name': 'ai-writing-assistant',
+        Authorization: `Bearer ${this.config.apiKey}`,
+        "Content-Type": "application/json",
+        "X-Client-Name": "ai-writing-assistant",
       },
       body: JSON.stringify({
         model: this.config.model,
@@ -113,7 +110,7 @@ export class CohereClient {
     }
 
     const reader = response.body?.getReader();
-    if (!reader) throw new Error('No response body');
+    if (!reader) throw new Error("No response body");
 
     const decoder = new TextDecoder();
 
@@ -122,7 +119,7 @@ export class CohereClient {
       if (done) break;
 
       const chunk = decoder.decode(value);
-      const lines = chunk.split('\n').filter((line) => line.trim());
+      const lines = chunk.split("\n").filter((line) => line.trim());
 
       for (const line of lines) {
         try {
@@ -138,17 +135,17 @@ export class CohereClient {
   async rerank(
     query: string,
     documents: string[],
-    topN?: number
+    topN?: number,
   ): Promise<Array<{ index: number; relevance_score: number }>> {
     const response = await fetch(`${this.baseUrl}/rerank`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${this.config.apiKey}`,
-        'Content-Type': 'application/json',
-        'X-Client-Name': 'ai-writing-assistant',
+        Authorization: `Bearer ${this.config.apiKey}`,
+        "Content-Type": "application/json",
+        "X-Client-Name": "ai-writing-assistant",
       },
       body: JSON.stringify({
-        model: 'rerank-english-v2.0',
+        model: "rerank-english-v2.0",
         query,
         documents,
         top_n: topN || documents.length,

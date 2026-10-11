@@ -28,6 +28,7 @@ export type WritingAction =
   | "translate"
   | "expand"
   | "shorten"
+  | "explain"
   | "custom";
 
 /** LLM provider identifiers. */
@@ -52,6 +53,8 @@ export type MessageType =
   | "AI_ABORT"
   | "GET_SELECTION"
   | "APPLY_SUGGESTION"
+  | "RUN_ACTION"
+  | "UNDO_SUGGESTION"
   | "SHOW_TOOLBAR"
   | "HIDE_TOOLBAR"
   | "APPLY_HIGHLIGHTS"
@@ -98,6 +101,7 @@ export interface AIRequest {
 /** Streaming chunk from AI provider. */
 export interface AIStreamChunk {
   requestId: string;
+  action?: WritingAction;
   content: string;
   done: boolean;
 }
@@ -138,6 +142,19 @@ export interface AnalyticsSnapshot {
   suggestionsRejected: number;
   periodStart: number;
   periodEnd: number;
+  /** Accepted edits grouped by mistake category (see `@awa/analytics` taxonomy). */
+  mistakes?: Record<string, number>;
+  /** Running totals for before/after reading-level comparison of accepted edits. */
+  readingLevel?: ReadingLevelTotals;
+}
+
+/** Summed reading-level scores of accepted edits (divide by `samples` for averages). */
+export interface ReadingLevelTotals {
+  samples: number;
+  gradeBefore: number;
+  gradeAfter: number;
+  easeBefore: number;
+  easeAfter: number;
 }
 
 /** Highlight payload for content script. */
@@ -157,4 +174,5 @@ export interface SuggestionPayload {
   original: string;
   modified: string;
   requestId: string;
+  action?: WritingAction;
 }

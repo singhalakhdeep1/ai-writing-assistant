@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { inferWritingContext, buildPromptWithContext, buildPrompt } from "./index";
+import { inferWritingContext, buildPromptWithContext, buildPrompt } from "./index.js";
 
 describe("@awa/prompts", () => {
   it("infers email context from Gmail", () => {

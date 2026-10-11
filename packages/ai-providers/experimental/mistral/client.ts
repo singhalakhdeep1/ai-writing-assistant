@@ -29,11 +29,11 @@ export interface MistralResponse {
 
 export class MistralClient {
   private config: MistralConfig;
-  private baseUrl = 'https://api.mistral.ai/v1';
+  private baseUrl = "https://api.mistral.ai/v1";
 
   constructor(config: MistralConfig) {
     this.config = {
-      model: 'mistral-tiny',
+      model: "mistral-tiny",
       temperature: 0.7,
       maxTokens: 1024,
       ...config,
@@ -42,10 +42,10 @@ export class MistralClient {
 
   async chat(messages: Array<{ role: string; content: string }>): Promise<MistralResponse> {
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${this.config.apiKey}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.config.apiKey}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model: this.config.model,
@@ -63,21 +63,19 @@ export class MistralClient {
   }
 
   async complete(prompt: string): Promise<string> {
-    const response = await this.chat([
-      { role: 'user', content: prompt },
-    ]);
+    const response = await this.chat([{ role: "user", content: prompt }]);
     return response.choices[0].message.content;
   }
 
   async streamChat(
     messages: Array<{ role: string; content: string }>,
-    onChunk: (chunk: string) => void
+    onChunk: (chunk: string) => void,
   ): Promise<void> {
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${this.config.apiKey}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.config.apiKey}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model: this.config.model,
@@ -93,7 +91,7 @@ export class MistralClient {
     }
 
     const reader = response.body?.getReader();
-    if (!reader) throw new Error('No response body');
+    if (!reader) throw new Error("No response body");
 
     const decoder = new TextDecoder();
 
@@ -102,11 +100,11 @@ export class MistralClient {
       if (done) break;
 
       const chunk = decoder.decode(value);
-      const lines = chunk.split('\n').filter((line) => line.startsWith('data: '));
+      const lines = chunk.split("\n").filter((line) => line.startsWith("data: "));
 
       for (const line of lines) {
         const data = line.slice(6);
-        if (data === '[DONE]') continue;
+        if (data === "[DONE]") continue;
 
         try {
           const parsed = JSON.parse(data);
@@ -122,7 +120,7 @@ export class MistralClient {
   async listModels(): Promise<Array<{ id: string; object: string; created: number }>> {
     const response = await fetch(`${this.baseUrl}/models`, {
       headers: {
-        'Authorization': `Bearer ${this.config.apiKey}`,
+        Authorization: `Bearer ${this.config.apiKey}`,
       },
     });
 
@@ -136,13 +134,13 @@ export class MistralClient {
 
   async embed(text: string): Promise<number[]> {
     const response = await fetch(`${this.baseUrl}/embeddings`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${this.config.apiKey}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.config.apiKey}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: 'mistral-embed',
+        model: "mistral-embed",
         input: text,
       }),
     });

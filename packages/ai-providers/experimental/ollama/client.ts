@@ -26,8 +26,8 @@ export class OllamaClient {
 
   constructor(config: OllamaConfig = {}) {
     this.config = {
-      baseUrl: 'http://localhost:11434',
-      model: 'llama2',
+      baseUrl: "http://localhost:11434",
+      model: "llama2",
       temperature: 0.7,
       numPredict: 1024,
       ...config,
@@ -36,8 +36,8 @@ export class OllamaClient {
 
   async generate(prompt: string): Promise<OllamaResponse> {
     const response = await fetch(`${this.config.baseUrl}/api/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: this.config.model,
         prompt,
@@ -56,12 +56,10 @@ export class OllamaClient {
     return await response.json();
   }
 
-  async chat(
-    messages: Array<{ role: string; content: string }>
-  ): Promise<OllamaResponse> {
+  async chat(messages: Array<{ role: string; content: string }>): Promise<OllamaResponse> {
     const response = await fetch(`${this.config.baseUrl}/api/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: this.config.model,
         messages,
@@ -80,13 +78,10 @@ export class OllamaClient {
     return await response.json();
   }
 
-  async streamGenerate(
-    prompt: string,
-    onChunk: (chunk: string) => void
-  ): Promise<void> {
+  async streamGenerate(prompt: string, onChunk: (chunk: string) => void): Promise<void> {
     const response = await fetch(`${this.config.baseUrl}/api/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: this.config.model,
         prompt,
@@ -103,7 +98,7 @@ export class OllamaClient {
     }
 
     const reader = response.body?.getReader();
-    if (!reader) throw new Error('No response body');
+    if (!reader) throw new Error("No response body");
 
     const decoder = new TextDecoder();
 
@@ -112,7 +107,7 @@ export class OllamaClient {
       if (done) break;
 
       const chunk = decoder.decode(value);
-      const lines = chunk.split('\n').filter((line) => line.trim());
+      const lines = chunk.split("\n").filter((line) => line.trim());
 
       for (const line of lines) {
         try {
@@ -137,8 +132,8 @@ export class OllamaClient {
 
   async pullModel(model: string): Promise<void> {
     const response = await fetch(`${this.config.baseUrl}/api/pull`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: model, stream: false }),
     });
 

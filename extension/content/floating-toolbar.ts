@@ -2,6 +2,12 @@ import type { WritingAction } from "@awa/types";
 
 const TOOLBAR_ID = "awa-floating-toolbar";
 
+/** Keyboard shortcut letters (Alt+Shift+<key>) declared in the manifest `commands`. */
+const SHORTCUT_KEYS: Partial<Record<WritingAction, string>> = {
+  grammar: "G",
+  rewrite: "R",
+};
+
 const ACTIONS: Array<{ action: WritingAction; label: string; icon: string }> = [
   { action: "grammar", label: "Fix Grammar", icon: "✓" },
   { action: "rewrite", label: "Rewrite", icon: "↻" },
@@ -9,15 +15,22 @@ const ACTIONS: Array<{ action: WritingAction; label: string; icon: string }> = [
   { action: "summarize", label: "Summarize", icon: "…" },
 ];
 
+export type ToolbarMode = "actions" | "undo";
+
 export interface FloatingToolbarOptions {
   onAction: (action: WritingAction) => void;
+  onUndo: () => void;
   onDismiss: () => void;
 }
 
 /** Creates a shadow-DOM floating suggestion toolbar (Module 9). */
 export function createFloatingToolbar(options: FloatingToolbarOptions): {
-  show: (rect: { top: number; left: number; width: number; height: number }) => void;
+  show: (
+    rect: { top: number; left: number; width: number; height: number },
+    mode?: ToolbarMode,
+  ) => void;
   hide: () => void;
+  isVisible: () => boolean;
   destroy: () => void;
 } {
   const host = document.createElement("div");
@@ -75,16 +88,34 @@ export function createFloatingToolbar(options: FloatingToolbarOptions): {
   toolbar.className = "awa-toolbar";
   toolbar.style.display = "none";
 
+  const actionButtons: HTMLElement[] = [];
   for (const { action, label, icon } of ACTIONS) {
     const btn = document.createElement("button");
     btn.className = "awa-btn";
-    btn.innerHTML = `<span class="awa-btn-icon">${icon}</span>${label}`;
+    const key = SHORTCUT_KEYS[action];
+    btn.title = key ? `${label} (Alt+Shift+${key})` : label;
+    const iconEl = document.createElement("span");
+    iconEl.className = "awa-btn-icon";
+    iconEl.textContent = icon;
+    btn.append(iconEl, document.createTextNode(label));
     btn.addEventListener("mousedown", (e) => {
       e.preventDefault();
       options.onAction(action);
     });
     toolbar.appendChild(btn);
+    actionButtons.push(btn);
   }
+
+  const undoBtn = document.createElement("button");
+  undoBtn.className = "awa-btn";
+  undoBtn.title = "Undo last applied suggestion (Alt+Shift+Z)";
+  undoBtn.textContent = "↶ Applied — Undo";
+  undoBtn.style.display = "none";
+  undoBtn.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    options.onUndo();
+  });
+  toolbar.appendChild(undoBtn);
 
   const dismiss = document.createElement("button");
   dismiss.className = "awa-dismiss";
@@ -98,8 +129,15 @@ export function createFloatingToolbar(options: FloatingToolbarOptions): {
   shadow.appendChild(style);
   shadow.appendChild(toolbar);
 
+  const onKeyDown = (e: KeyboardEvent): void => {
+    if (e.key === "Escape" && toolbar.style.display !== "none") options.onDismiss();
+  };
+  document.addEventListener("keydown", onKeyDown, true);
+
   return {
-    show(rect) {
+    show(rect, mode = "actions") {
+      for (const btn of actionButtons) btn.style.display = mode === "actions" ? "flex" : "none";
+      undoBtn.style.display = mode === "undo" ? "flex" : "none";
       const top = rect.top + window.scrollY - 48;
       const left = rect.left + window.scrollX + rect.width / 2;
       toolbar.style.display = "flex";
@@ -110,7 +148,11 @@ export function createFloatingToolbar(options: FloatingToolbarOptions): {
     hide() {
       toolbar.style.display = "none";
     },
+    isVisible() {
+      return toolbar.style.display !== "none";
+    },
     destroy() {
+      document.removeEventListener("keydown", onKeyDown, true);
       host.remove();
     },
   };

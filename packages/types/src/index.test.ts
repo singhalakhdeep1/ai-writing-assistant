@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ExtensionMessage, AIRequest } from "./index";
+import type { ExtensionMessage, AIRequest } from "./index.js";
 
 describe("@awa/types", () => {
   it("ExtensionMessage shape is valid", () => {

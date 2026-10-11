@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { debounce, hostnameMatches } from "./index";
+import { debounce, hostnameMatches } from "./index.js";
 
 describe("@awa/utils debounce", () => {
   beforeEach(() => {

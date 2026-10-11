@@ -94,3 +94,76 @@ export function replaceSelectionText(element: Element, newText: string): boolean
   element.dispatchEvent(new Event("input", { bubbles: true }));
   return true;
 }
+
+/** Location of a text match across a sequence of text nodes. */
+export interface TextMatch {
+  startNode: number;
+  startOffset: number;
+  endNode: number;
+  endOffset: number;
+}
+
+/**
+ * Finds the first occurrence of `search` in the concatenation of `texts`
+ * and maps it back to (node index, offset) pairs. Pure so it is unit-testable.
+ */
+export function findTextMatch(texts: string[], search: string): TextMatch | null {
+  if (!search) return null;
+  const index = texts.join("").indexOf(search);
+  if (index < 0) return null;
+
+  const locate = (position: number, isEnd: boolean): [number, number] => {
+    let consumed = 0;
+    for (let i = 0; i < texts.length; i++) {
+      const len = texts[i]!.length;
+      const within = isEnd ? position <= consumed + len : position < consumed + len;
+      if (within) return [i, position - consumed];
+      consumed += len;
+    }
+    return [texts.length - 1, texts[texts.length - 1]!.length];
+  };
+
+  const [startNode, startOffset] = locate(index, false);
+  const [endNode, endOffset] = locate(index + search.length, true);
+  return { startNode, startOffset, endNode, endOffset };
+}
+
+/**
+ * Replaces the first occurrence of `search` inside an editable element with `replacement`.
+ * Used to undo an applied suggestion without relying on the (now gone) selection.
+ */
+export function replaceTextInElement(
+  element: Element,
+  search: string,
+  replacement: string,
+): boolean {
+  if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
+    const at = element.value.indexOf(search);
+    if (!search || at < 0) return false;
+    element.value =
+      element.value.slice(0, at) + replacement + element.value.slice(at + search.length);
+    element.selectionStart = at;
+    element.selectionEnd = at + replacement.length;
+    element.dispatchEvent(new Event("input", { bubbles: true }));
+    return true;
+  }
+
+  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+  const nodes: Text[] = [];
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) nodes.push(node as Text);
+
+  const match = findTextMatch(
+    nodes.map((n) => n.data),
+    search,
+  );
+  if (!match) return false;
+
+  const range = document.createRange();
+  range.setStart(nodes[match.startNode]!, match.startOffset);
+  range.setEnd(nodes[match.endNode]!, match.endOffset);
+  range.deleteContents();
+  const inserted = document.createTextNode(replacement);
+  range.insertNode(inserted);
+  element.dispatchEvent(new Event("input", { bubbles: true }));
+  return true;
+}

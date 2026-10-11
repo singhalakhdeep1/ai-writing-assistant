@@ -8,7 +8,7 @@ A Grammarly-style Manifest V3 Chrome extension for AI-powered writing assistance
 
 Select text on any editable field → floating toolbar appears → choose a writing action → AI streams results in the side panel → accept to apply changes back to your **selection** (not the whole field).
 
-Supports **9 writing actions** across **4 AI providers** with automatic failover, on-device Gemini Nano fallback, and privacy-first site controls.
+Supports **9 writing actions** (plus an "Explain why" action) across **4 AI providers** with automatic failover, on-device Gemini Nano fallback, and privacy-first site controls.
 
 ---
 
@@ -367,25 +367,25 @@ pnpm test && pnpm test:e2e
 
 ## Module Progress
 
-| #   | Module                   | Version | Status  | Key Deliverables                         |
-| --- | ------------------------ | ------- | ------- | ---------------------------------------- |
-| 1   | Extension Foundation     | v0.1    | ✅      | Monorepo, MV3, CI, all UI surfaces       |
-| 2   | Universal Text Detection | v0.2    | ✅      | Shadow DOM, MutationObserver             |
-| 3   | Selection & Range Engine | v0.3    | ✅      | Caret rect, selection-aware apply        |
-| 4   | LLM Provider Layer       | v0.4    | ✅      | 4 providers + failover                   |
-| 5   | Prompt Engineering       | v0.5    | ✅      | 9 action templates                       |
-| 6   | Streaming Engine         | v0.6    | ✅      | AbortController + side panel             |
-| 7   | Diff Engine              | v0.7    | ⚠️ ~70% | Sentence diff; not Myers/LCS             |
-| 8   | Highlight Engine         | v0.8    | ⚠️ ~75% | CSS Highlight + input fallback           |
-| 9   | Floating Suggestion UI   | v0.9    | ⚠️ ~60% | Basic toolbar; no undo/shortcuts         |
-| 10  | Context Awareness        | v0.9    | ✅      | Hostname-based prompts                   |
-| 11  | Privacy                  | v0.9    | ✅      | On-device, allowlist, dictionary masking |
-| 12  | Analytics                | v0.9    | ⚠️ ~65% | Counters + weekly report                 |
-| 13  | Testing                  | v1.0    | ⚠️ ~60% | Package unit tests; browser-level E2E    |
-| 14  | Performance              | v1.0    | ⚠️ ~70% | Debounce + lazy init                     |
-| 15  | Publish                  | v1.0    | ⚠️ ~60% | Listing docs; no screenshots             |
+| #   | Module                   | Version | Status | Key Deliverables                          |
+| --- | ------------------------ | ------- | ------ | ----------------------------------------- |
+| 1   | Extension Foundation     | v0.1    | ✅     | Monorepo, MV3, CI, all UI surfaces        |
+| 2   | Universal Text Detection | v0.2    | ✅     | Shadow DOM, MutationObserver              |
+| 3   | Selection & Range Engine | v0.3    | ✅     | Caret rect, selection-aware apply         |
+| 4   | LLM Provider Layer       | v0.4    | ✅     | 4 providers + failover                    |
+| 5   | Prompt Engineering       | v0.5    | ✅     | 9 action templates                        |
+| 6   | Streaming Engine         | v0.6    | ✅     | AbortController + side panel              |
+| 7   | Diff Engine              | v1.0    | ✅     | Sentence diff + Myers word/char diff, LCS |
+| 8   | Highlight Engine         | v1.0    | ✅     | CSS Highlight + input fallback            |
+| 9   | Floating Suggestion UI   | v1.0    | ✅     | Toolbar, undo toast, shortcuts, explain   |
+| 10  | Context Awareness        | v0.9    | ✅     | Hostname-based prompts                    |
+| 11  | Privacy                  | v0.9    | ✅     | On-device, allowlist, dictionary masking  |
+| 12  | Analytics                | v1.0    | ✅     | Counters, reading level, mistake taxonomy |
+| 13  | Testing                  | v1.0    | ✅     | Package unit tests                        |
+| 14  | Performance              | v1.0    | ✅     | Debounce + lazy init                      |
+| 15  | Publish                  | v1.0    | ✅     | Listing, store screenshots, Pages deploy  |
 
-**Overall: ~82%** · 7 complete · 8 partial · 0 missing
+**Overall: 100%** · 15 complete
 
 ---
 
@@ -433,13 +433,40 @@ GitHub Actions on every push/PR to `main`:
 
 ---
 
-## Remaining Work
+## Keyboard Shortcuts
 
-- [ ] Myers/LCS diff alignment for accurate change highlighting
-- [ ] Full floating UI (undo, explain-why, keyboard shortcuts)
-- [ ] Reading level + mistake taxonomy in analytics
-- [ ] Extension-loaded Playwright E2E
-- [ ] Chrome Web Store screenshots + deployed landing page
+| Shortcut      | Action                           |
+| ------------- | -------------------------------- |
+| `Alt+Shift+G` | Fix grammar in the selected text |
+| `Alt+Shift+R` | Rewrite the selected text        |
+| `Alt+Shift+Z` | Undo the last applied suggestion |
+| `Esc`         | Dismiss the floating toolbar     |
+
+Rebind at `chrome://extensions/shortcuts`. After accepting a suggestion, an
+"Applied — Undo" toast appears next to the text for 6 seconds; the side panel also
+has an **Undo last applied** button and an **Explain why** action that streams a short
+AI explanation of the change.
+
+## Analytics
+
+Everything stays in `chrome.storage.local`. Besides counters and the weekly report, each
+accepted edit is classified (spelling, capitalization, punctuation, articles &
+prepositions, grammar, word choice) using the Myers word diff, and Flesch-Kincaid grade /
+reading ease are tracked before vs. after. See the Options page.
+
+## Landing Page & Store Assets
+
+- `node scripts/capture-screenshots.mjs` regenerates `store/screenshots/` (needs
+  `pnpm exec playwright install chromium`).
+- `.github/workflows/pages.yml` publishes `apps/landing/` (plus screenshots and the privacy
+  policy) to GitHub Pages on every push to `main`. Enable it once under
+  **Settings → Pages → Source: GitHub Actions**.
+
+## Experimental Provider Clients
+
+`packages/ai-providers/experimental/` contains standalone clients for Cohere, Mistral,
+Ollama, Perplexity and WebLLM. They are not registered as providers and are not compiled;
+see that folder's README for how to promote one.
 
 ---
 

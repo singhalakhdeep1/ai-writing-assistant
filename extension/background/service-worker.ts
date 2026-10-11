@@ -1,6 +1,6 @@
 import { createMessage, onMessage } from "@awa/messaging";
 import { getAnalytics, getAcceptanceRate } from "@awa/analytics";
-import type { AppSettings, ExtensionMessage, PrivacySettings, TabInfo } from "@awa/types";
+import type { AppSettings, ExtensionMessage, TabInfo, WritingAction } from "@awa/types";
 import { logger } from "@awa/utils";
 import { handleAIAbort, handleAIRequest, getTabSelection, updateTabSelection } from "./ai-handler";
 import { getPrivacySettings, savePrivacySettings } from "./privacy";
@@ -36,6 +36,31 @@ chrome.runtime.onInstalled.addListener(async (details) => {
         providerKeys: {},
       },
     });
+  }
+});
+
+const COMMAND_ACTIONS: Record<
+  string,
+  { type: "RUN_ACTION" | "UNDO_SUGGESTION"; action?: WritingAction }
+> = {
+  "fix-grammar": { type: "RUN_ACTION", action: "grammar" },
+  "rewrite-selection": { type: "RUN_ACTION", action: "rewrite" },
+  "undo-suggestion": { type: "UNDO_SUGGESTION" },
+};
+
+chrome.commands.onCommand.addListener(async (command) => {
+  const mapped = COMMAND_ACTIONS[command];
+  if (!mapped) return;
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.id) return;
+  try {
+    await chrome.tabs.sendMessage(
+      tab.id,
+      createMessage(mapped.type, mapped.action ? { action: mapped.action } : undefined),
+    );
+  } catch (error) {
+    // Content scripts are not injected on chrome:// pages or before the page finished loading.
+    logger.debug("Command not delivered", { command, error: String(error) });
   }
 });
 
@@ -118,7 +143,7 @@ onMessage({
     };
     return handleAIRequest(enriched as ExtensionMessage<import("@awa/types").AIRequest>, {
       ...sender,
-      tab: tabId ? { id: tabId } : sender.tab,
+      tab: tabId ? ({ id: tabId } as chrome.tabs.Tab) : sender.tab,
     });
   },
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createMessage, pingBackground } from "@awa/messaging";
 import type {
   AIRequest,
+  AIStreamChunk,
   AnalyticsSnapshot,
   AppSettings,
   TabInfo,
@@ -66,29 +67,48 @@ export function useAIStream() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [originalText, setOriginalText] = useState("");
-  const [diffs, setDiffs] = useState<Array<{ original: string; modified: string; changed: boolean }>>([]);
+  const [explanation, setExplanation] = useState("");
+  const [isExplaining, setIsExplaining] = useState(false);
+  const [diffs, setDiffs] = useState<
+    Array<{ original: string; modified: string; changed: boolean }>
+  >([]);
 
   useEffect(() => {
     const listener = (message: { type: string; payload?: unknown }) => {
       if (message.type === "AI_STREAM_CHUNK") {
-        const chunk = message.payload as { requestId: string; content: string; done: boolean };
+        const chunk = message.payload as AIStreamChunk;
         if (chunk.done) return;
-        setStreamText((prev) => prev + chunk.content);
+        // "Explain why" streams into its own channel so it never replaces the suggestion.
+        if (chunk.action === "explain") setExplanation((prev) => prev + chunk.content);
+        else setStreamText((prev) => prev + chunk.content);
       }
       if (message.type === "AI_STREAM_DONE") {
         const payload = message.payload as {
           requestId: string;
+          action?: WritingAction;
+          original?: string;
           fullText: string;
           diffs: Array<{ original: string; modified: string; changed: boolean }>;
         };
+        if (payload.action === "explain") {
+          setExplanation(payload.fullText);
+          setIsExplaining(false);
+          return;
+        }
         setStreamText(payload.fullText);
         setDiffs(payload.diffs ?? []);
+        if (payload.original) setOriginalText(payload.original);
         setIsStreaming(false);
       }
       if (message.type === "AI_STREAM_ERROR") {
-        const payload = message.payload as { requestId: string; error: string };
+        const payload = message.payload as {
+          requestId: string;
+          action?: WritingAction;
+          error: string;
+        };
         setError(payload.error);
-        setIsStreaming(false);
+        if (payload.action === "explain") setIsExplaining(false);
+        else setIsStreaming(false);
       }
     };
 
@@ -98,6 +118,7 @@ export function useAIStream() {
 
   const startStream = useCallback(async (request: AIRequest) => {
     setStreamText("");
+    setExplanation("");
     setError(null);
     setDiffs([]);
     setOriginalText(request.text);
@@ -114,6 +135,23 @@ export function useAIStream() {
     return id;
   }, []);
 
+  /** Asks the AI why `suggested` is better than `original` (streams into `explanation`). */
+  const explain = useCallback(async (original: string, suggested: string) => {
+    setExplanation("");
+    setError(null);
+    setIsExplaining(true);
+    const response = await chrome.runtime.sendMessage(
+      createMessage("AI_REQUEST", {
+        action: "explain",
+        text: `Original:\n${original}\n\nSuggested:\n${suggested}`,
+      }),
+    );
+    if (!response?.success) {
+      setError(response?.error ?? "Could not explain this change");
+      setIsExplaining(false);
+    }
+  }, []);
+
   const abortStream = useCallback(async () => {
     if (!requestId) return;
     await chrome.runtime.sendMessage(createMessage("AI_ABORT", { requestId }));
@@ -127,6 +165,8 @@ export function useAIStream() {
     setRequestId(null);
     setIsStreaming(false);
     setOriginalText("");
+    setExplanation("");
+    setIsExplaining(false);
   }, []);
 
   return {
@@ -136,7 +176,10 @@ export function useAIStream() {
     error,
     originalText,
     diffs,
+    explanation,
+    isExplaining,
     startStream,
+    explain,
     abortStream,
     reset,
   };
@@ -154,14 +197,11 @@ export function useSettings() {
     setIsLoading(false);
   }, []);
 
-  const save = useCallback(
-    async (partial: Partial<AppSettings>) => {
-      const response = await chrome.runtime.sendMessage(createMessage("SAVE_SETTINGS", partial));
-      if (response?.success) setSettings(response.data as AppSettings);
-      return response?.success ?? false;
-    },
-    [],
-  );
+  const save = useCallback(async (partial: Partial<AppSettings>) => {
+    const response = await chrome.runtime.sendMessage(createMessage("SAVE_SETTINGS", partial));
+    if (response?.success) setSettings(response.data as AppSettings);
+    return response?.success ?? false;
+  }, []);
 
   useEffect(() => {
     void load();
@@ -172,9 +212,9 @@ export function useSettings() {
 
 /** Hook for local analytics (Module 12). */
 export function useAnalytics() {
-  const [analytics, setAnalytics] = useState<(AnalyticsSnapshot & { acceptanceRate: number }) | null>(
-    null,
-  );
+  const [analytics, setAnalytics] = useState<
+    (AnalyticsSnapshot & { acceptanceRate: number }) | null
+  >(null);
 
   const load = useCallback(async () => {
     const response = await chrome.runtime.sendMessage(createMessage("GET_ANALYTICS"));
@@ -234,7 +274,10 @@ export async function applySuggestion(
   payload: { fieldId: string; original: string; modified: string; requestId: string },
 ): Promise<boolean> {
   try {
-    const response = await chrome.tabs.sendMessage(tabId, createMessage("APPLY_SUGGESTION", payload));
+    const response = await chrome.tabs.sendMessage(
+      tabId,
+      createMessage("APPLY_SUGGESTION", payload),
+    );
     return response?.success ?? false;
   } catch {
     return false;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createStreamRequest, abortStream, completeStream, getActiveStreamCount } from "./index";
+import { createStreamRequest, abortStream, completeStream, getActiveStreamCount } from "./index.js";
 
 describe("@awa/streaming", () => {
   it("creates and tracks stream requests", () => {

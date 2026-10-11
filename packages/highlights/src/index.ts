@@ -34,7 +34,6 @@ export function applyHighlights(ranges: HighlightRange[], root: Node): void {
 export function clearHighlights(): void {
   if (!("Highlight" in window)) return;
   for (const name of Object.values(HIGHLIGHT_NAMES)) {
-    // @ts-expect-error CSS Highlight API
     CSS.highlights.delete(name);
   }
 }
@@ -55,10 +54,7 @@ export function applyFieldHighlights(
 }
 
 /** Applies highlights to contenteditable or falls back for form fields. */
-export function applyHighlightsToElement(
-  element: HTMLElement,
-  ranges: HighlightRange[],
-): void {
+export function applyHighlightsToElement(element: HTMLElement, ranges: HighlightRange[]): void {
   if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
     applyFieldHighlights(element, ranges);
     return;

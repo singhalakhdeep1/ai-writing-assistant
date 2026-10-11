@@ -1,14 +1,10 @@
 import { getAvailableProvider, getProvider } from "@awa/ai-providers";
 import { buildPromptWithContext } from "@awa/prompts";
 import { createMessage } from "@awa/messaging";
-import {
-  abortStream,
-  completeStream,
-  createStreamRequest,
-} from "@awa/streaming";
+import { abortStream, completeStream, createStreamRequest } from "@awa/streaming";
 import { recordSuggestionShown } from "@awa/analytics";
 import { diffSentences, getChangedSentences } from "@awa/diff";
-import type { AIRequest, AIStreamChunk, ExtensionMessage } from "@awa/types";
+import type { AIRequest, AIStreamChunk, ExtensionMessage, WritingAction } from "@awa/types";
 import { generateId, logger } from "@awa/utils";
 import { filterPersonalDictionary, getPrivacySettings, isSiteAllowed } from "./privacy";
 
@@ -35,16 +31,21 @@ function broadcastStreamChunk(chunk: AIStreamChunk): void {
   void chrome.runtime.sendMessage(createMessage("AI_STREAM_CHUNK", chunk));
 }
 
-function broadcastStreamDone(requestId: string, fullText: string, original: string): void {
+function broadcastStreamDone(
+  requestId: string,
+  action: WritingAction,
+  fullText: string,
+  original: string,
+): void {
   const diffs = diffSentences(original, fullText);
   const changed = getChangedSentences(original, fullText);
   void chrome.runtime.sendMessage(
-    createMessage("AI_STREAM_DONE", { requestId, fullText, diffs, changed }),
+    createMessage("AI_STREAM_DONE", { requestId, action, original, fullText, diffs, changed }),
   );
 }
 
-function broadcastStreamError(requestId: string, error: string): void {
-  void chrome.runtime.sendMessage(createMessage("AI_STREAM_ERROR", { requestId, error }));
+function broadcastStreamError(requestId: string, action: WritingAction, error: string): void {
+  void chrome.runtime.sendMessage(createMessage("AI_STREAM_ERROR", { requestId, action, error }));
 }
 
 /** Handles AI requests with streaming and AbortController (Modules 4–6). */
@@ -56,7 +57,8 @@ export async function handleAIRequest(
   const payload = message.payload;
   if (!payload) return { success: false, error: "Missing AI request payload" };
 
-  const hostname = payload.hostname ?? (tabId ? tabState.get(tabId)?.hostname : undefined) ?? "unknown";
+  const hostname =
+    payload.hostname ?? (tabId ? tabState.get(tabId)?.hostname : undefined) ?? "unknown";
 
   if (!(await isSiteAllowed(hostname))) {
     return { success: false, error: "Site is blocked by privacy settings" };
@@ -104,10 +106,13 @@ export async function handleAIRequest(
   request.requestId = requestId;
 
   void processAIStream(requestId, request, provider.id, streamRequest.controller.signal, text);
-  void recordSuggestionShown();
+  if (request.action !== "explain") void recordSuggestionShown();
 
-  if (tabId && chrome.sidePanel?.open) {
-    void chrome.sidePanel.open({ tabId });
+  // Explanations are requested from inside the side panel, which is already open.
+  if (tabId && chrome.sidePanel?.open && request.action !== "explain") {
+    chrome.sidePanel.open({ tabId }).catch(() => {
+      // Opening needs a user gesture; the panel can still be opened from the popup.
+    });
   }
 
   return { success: true, data: { requestId } };
@@ -122,11 +127,15 @@ async function processAIStream(
 ): Promise<void> {
   const provider = await getAvailableProvider(providerId as AIRequest["provider"]);
   if (!provider) {
-    broadcastStreamError(requestId, "Provider unavailable");
+    broadcastStreamError(requestId, request.action, "Provider unavailable");
     return;
   }
 
-  const { context } = buildPromptWithContext(request.action, request.text, request.hostname ?? "unknown");
+  const { context } = buildPromptWithContext(
+    request.action,
+    request.text,
+    request.hostname ?? "unknown",
+  );
   logger.info(`AI stream started`, { requestId, provider: provider.name, context });
 
   let fullText = "";
@@ -135,17 +144,17 @@ async function processAIStream(
     for await (const chunk of provider.stream(request, signal)) {
       if (signal.aborted) break;
       fullText += chunk;
-      broadcastStreamChunk({ requestId, content: chunk, done: false });
+      broadcastStreamChunk({ requestId, action: request.action, content: chunk, done: false });
     }
 
     if (!signal.aborted) {
-      broadcastStreamChunk({ requestId, content: "", done: true });
-      broadcastStreamDone(requestId, fullText.trim(), originalText);
+      broadcastStreamChunk({ requestId, action: request.action, content: "", done: true });
+      broadcastStreamDone(requestId, request.action, fullText.trim(), originalText);
     }
   } catch (error) {
     if (!signal.aborted) {
       const msg = error instanceof Error ? error.message : "Stream failed";
-      broadcastStreamError(requestId, msg);
+      broadcastStreamError(requestId, request.action, msg);
       logger.error("AI stream error", { requestId, error: msg });
     }
   } finally {

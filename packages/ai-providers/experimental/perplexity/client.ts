@@ -27,11 +27,11 @@ export interface PerplexityResponse {
 
 export class PerplexityClient {
   private config: PerplexityConfig;
-  private baseUrl = 'https://api.perplexity.ai';
+  private baseUrl = "https://api.perplexity.ai";
 
   constructor(config: PerplexityConfig) {
     this.config = {
-      model: 'llama-3.1-sonar-small-128k-online',
+      model: "llama-3.1-sonar-small-128k-online",
       temperature: 0.7,
       maxTokens: 1024,
       ...config,
@@ -40,10 +40,10 @@ export class PerplexityClient {
 
   async chat(messages: Array<{ role: string; content: string }>): Promise<PerplexityResponse> {
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${this.config.apiKey}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.config.apiKey}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model: this.config.model,
@@ -61,21 +61,19 @@ export class PerplexityClient {
   }
 
   async complete(prompt: string): Promise<string> {
-    const response = await this.chat([
-      { role: 'user', content: prompt },
-    ]);
+    const response = await this.chat([{ role: "user", content: prompt }]);
     return response.choices[0].message.content;
   }
 
   async streamChat(
     messages: Array<{ role: string; content: string }>,
-    onChunk: (chunk: string) => void
+    onChunk: (chunk: string) => void,
   ): Promise<void> {
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${this.config.apiKey}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.config.apiKey}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model: this.config.model,
@@ -91,7 +89,7 @@ export class PerplexityClient {
     }
 
     const reader = response.body?.getReader();
-    if (!reader) throw new Error('No response body');
+    if (!reader) throw new Error("No response body");
 
     const decoder = new TextDecoder();
 
@@ -100,11 +98,11 @@ export class PerplexityClient {
       if (done) break;
 
       const chunk = decoder.decode(value);
-      const lines = chunk.split('\n').filter((line) => line.startsWith('data: '));
+      const lines = chunk.split("\n").filter((line) => line.startsWith("data: "));
 
       for (const line of lines) {
         const data = line.slice(6);
-        if (data === '[DONE]') continue;
+        if (data === "[DONE]") continue;
 
         try {
           const parsed = JSON.parse(data);

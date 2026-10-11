@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { generateWeeklyReport, getAcceptanceRate } from "./index";
+import { generateWeeklyReport, getAcceptanceRate } from "./index.js";
 import type { AnalyticsSnapshot } from "@awa/types";
 
 describe("@awa/analytics", () => {

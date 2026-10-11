@@ -11,10 +11,8 @@ interface LanguageModelFactory {
   capabilities(): Promise<{ available: string }>;
 }
 
-declare global {
-  interface Window {
-    LanguageModel?: LanguageModelFactory;
-  }
+function getLanguageModel(): LanguageModelFactory | undefined {
+  return (globalThis as { LanguageModel?: LanguageModelFactory }).LanguageModel;
 }
 
 /** On-device Gemini Nano adapter (Module 4 & 11). */
@@ -23,9 +21,10 @@ export const geminiNanoAdapter: AIProviderAdapter = {
   name: "Gemini Nano (On-Device)",
 
   async isAvailable() {
-    if (typeof LanguageModel === "undefined") return false;
+    const languageModel = getLanguageModel();
+    if (!languageModel) return false;
     try {
-      const caps = await LanguageModel.capabilities();
+      const caps = await languageModel.capabilities();
       return caps.available !== "no";
     } catch {
       return false;
@@ -33,7 +32,8 @@ export const geminiNanoAdapter: AIProviderAdapter = {
   },
 
   async *stream(request: AIRequest, signal: AbortSignal) {
-    if (typeof LanguageModel === "undefined") {
+    const languageModel = getLanguageModel();
+    if (!languageModel) {
       throw new Error("On-device LanguageModel API is not available");
     }
 
@@ -45,7 +45,7 @@ export const geminiNanoAdapter: AIProviderAdapter = {
       request.customPrompt,
     );
 
-    const session = await LanguageModel.create({ systemPrompt: system });
+    const session = await languageModel.create({ systemPrompt: system });
     const stream = await session.promptStreaming(user);
 
     for await (const chunk of stream) {
