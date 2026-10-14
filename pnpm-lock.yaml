@@ -46,6 +46,9 @@ importers:
       '@awa/hooks':
         specifier: workspace:*
         version: link:../../packages/hooks
+      '@awa/messaging':
+        specifier: workspace:*
+        version: link:../../packages/messaging
       '@awa/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -223,6 +226,9 @@ importers:
       '@awa/selection':
         specifier: workspace:*
         version: link:../packages/selection
+      '@awa/services':
+        specifier: workspace:*
+        version: link:../packages/services
       '@awa/streaming':
         specifier: workspace:*
         version: link:../packages/streaming
@@ -575,6 +581,24 @@ importers:
       vitest:
         specifier: ^3.1.1
         version: 3.2.6(@types/node@22.15.3)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0)
+
+  packages/services:
+    devDependencies:
+      '@repo/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@repo/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      '@types/chrome':
+        specifier: ^0.0.313
+        version: 0.0.313
+      eslint:
+        specifier: ^9.39.1
+        version: 9.39.1(jiti@2.7.0)
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
 
   packages/streaming:
     dependencies:

@@ -2,7 +2,9 @@ import { createMessage, onMessage } from "@awa/messaging";
 import { getAnalytics, getAcceptanceRate } from "@awa/analytics";
 import type { AppSettings, ExtensionMessage, TabInfo, WritingAction } from "@awa/types";
 import { logger } from "@awa/utils";
+import { DEFAULT_PERFORMANCE } from "@awa/types";
 import { handleAIAbort, handleAIRequest, getTabSelection, updateTabSelection } from "./ai-handler";
+import { getDiagnostics, getPerformanceSettings, logging, responseCache } from "./infrastructure";
 import { getPrivacySettings, savePrivacySettings } from "./privacy";
 
 const SETTINGS_KEY = "awa:settings";
@@ -34,10 +36,27 @@ chrome.runtime.onInstalled.addListener(async (details) => {
       [SETTINGS_KEY]: {
         preferredProvider: "openai",
         providerKeys: {},
+        performance: DEFAULT_PERFORMANCE,
       },
     });
   }
+  logging.logAuditEvent("extension.lifecycle", `Extension ${details.reason}`, {
+    version: chrome.runtime.getManifest().version,
+  });
 });
+
+/**
+ * The web page a message is about. Content scripts report their own tab; extension pages
+ * (side panel, popup, or either opened in a normal tab) act on the active tab instead.
+ */
+async function resolveTargetTabId(
+  sender: chrome.runtime.MessageSender,
+): Promise<number | undefined> {
+  const fromExtensionPage = (sender.url ?? "").startsWith(chrome.runtime.getURL(""));
+  if (sender.tab?.id !== undefined && !fromExtensionPage) return sender.tab.id;
+  const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+  return tab?.id;
+}
 
 const COMMAND_ACTIONS: Record<
   string,
@@ -69,25 +88,11 @@ onMessage({
 
   GET_TAB_INFO: async (_message, sender) => {
     try {
-      const tabId = sender.tab?.id;
-      if (!tabId) {
-        const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (!activeTab?.id) return { success: false, error: "No active tab found" };
-        const tabInfo: TabInfo = {
-          tabId: activeTab.id,
-          url: activeTab.url ?? "",
-          title: activeTab.title ?? "",
-        };
-        return { success: true, data: tabInfo };
-      }
-      return {
-        success: true,
-        data: {
-          tabId,
-          url: sender.tab?.url ?? "",
-          title: sender.tab?.title ?? "",
-        } satisfies TabInfo,
-      };
+      const tabId = await resolveTargetTabId(sender);
+      if (tabId === undefined) return { success: false, error: "No active tab found" };
+      const tab = await chrome.tabs.get(tabId);
+      const tabInfo: TabInfo = { tabId, url: tab.url ?? "", title: tab.title ?? "" };
+      return { success: true, data: tabInfo };
     } catch (error) {
       return {
         success: false,
@@ -127,11 +132,7 @@ onMessage({
   },
 
   AI_REQUEST: async (message, sender) => {
-    let tabId = sender.tab?.id;
-    if (!tabId) {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      tabId = tab?.id;
-    }
+    const tabId = await resolveTargetTabId(sender);
     const enriched = {
       ...message,
       payload: {
@@ -150,16 +151,17 @@ onMessage({
   AI_ABORT: (message) => handleAIAbort(message as ExtensionMessage<{ requestId: string }>),
 
   GET_SETTINGS: async () => {
-    const [settingsResult, privacy] = await Promise.all([
+    const [settingsResult, privacy, performance] = await Promise.all([
       chrome.storage.local.get(SETTINGS_KEY),
       getPrivacySettings(),
+      getPerformanceSettings(),
     ]);
     const settings = (settingsResult[SETTINGS_KEY] as AppSettings) ?? {
       preferredProvider: "openai",
       providerKeys: {},
       privacy,
     };
-    return { success: true, data: { ...settings, privacy } };
+    return { success: true, data: { ...settings, privacy, performance } };
   },
 
   SAVE_SETTINGS: async (message) => {
@@ -168,6 +170,10 @@ onMessage({
     const merged = { ...(current[SETTINGS_KEY] as AppSettings), ...payload };
     await chrome.storage.local.set({ [SETTINGS_KEY]: merged });
     if (payload.privacy) await savePrivacySettings(payload.privacy);
+    logging.logAuditEvent("settings.saved", "Settings saved", {
+      fields: Object.keys(payload),
+      preferredProvider: merged.preferredProvider,
+    });
     return { success: true, data: merged };
   },
 
@@ -179,12 +185,16 @@ onMessage({
     };
   },
 
+  CLEAR_CACHE: async () => {
+    const removed = await responseCache.clear();
+    logging.logAuditEvent("cache.cleared", "Response cache cleared", { removed });
+    return { success: true, data: { removed } };
+  },
+
+  GET_DIAGNOSTICS: async () => ({ success: true, data: await getDiagnostics() }),
+
   GET_SELECTION: async (_message, sender) => {
-    let tabId = sender.tab?.id;
-    if (!tabId) {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      tabId = tab?.id;
-    }
+    const tabId = await resolveTargetTabId(sender);
     if (!tabId) return { success: false, error: "No tab" };
     const state = getTabSelection(tabId);
     return { success: true, data: state?.selection ?? null };

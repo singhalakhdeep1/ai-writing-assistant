@@ -10,6 +10,7 @@
   "dependencies": {
     "@awa/analytics": "workspace:*",
     "@awa/hooks": "workspace:*",
+    "@awa/messaging": "workspace:*",
     "@awa/types": "workspace:*",
     "@awa/ui": "workspace:*",
     "react": "^19.2.0",

@@ -10,8 +10,16 @@ import { Button } from "@awa/ui/button";
 import { Card } from "@awa/ui/card";
 import { Header } from "@awa/ui/header";
 import { MetricRow } from "@awa/ui/metric-row";
-import type { AIProvider, PrivacySettings, ProviderKeys } from "@awa/types";
-import { useEffect, useState } from "react";
+import { createMessage } from "@awa/messaging";
+import {
+  DEFAULT_PERFORMANCE,
+  type AIProvider,
+  type DiagnosticsSnapshot,
+  type PerformanceSettings,
+  type PrivacySettings,
+  type ProviderKeys,
+} from "@awa/types";
+import { useCallback, useEffect, useState } from "react";
 
 const PROVIDERS: Array<{ id: keyof ProviderKeys; label: string; placeholder: string }> = [
   { id: "openai", label: "OpenAI", placeholder: "sk-..." },
@@ -42,6 +50,9 @@ export function App() {
   const [allowedInput, setAllowedInput] = useState("");
   const [blockedInput, setBlockedInput] = useState("");
   const [dictInput, setDictInput] = useState("");
+  const [performance, setPerformance] = useState<PerformanceSettings>(DEFAULT_PERFORMANCE);
+  const [diagnostics, setDiagnostics] = useState<DiagnosticsSnapshot | null>(null);
+  const [cacheMessage, setCacheMessage] = useState("");
   const [saved, setSaved] = useState(false);
   const readingLevel = analytics ? getReadingLevelSummary(analytics) : null;
   const topMistakes = analytics ? getTopMistakes(analytics) : [];
@@ -54,7 +65,30 @@ export function App() {
     setAllowedInput(settings.privacy.allowedSites.join("\n"));
     setBlockedInput(settings.privacy.blockedSites.join("\n"));
     setDictInput(settings.privacy.personalDictionary.join("\n"));
+    setPerformance({ ...DEFAULT_PERFORMANCE, ...settings.performance });
   }, [settings]);
+
+  const loadDiagnostics = useCallback(async () => {
+    const response = await chrome.runtime.sendMessage(createMessage("GET_DIAGNOSTICS"));
+    if (response?.success) setDiagnostics(response.data as DiagnosticsSnapshot);
+  }, []);
+
+  useEffect(() => {
+    void loadDiagnostics();
+  }, [loadDiagnostics]);
+
+  const handleClearCache = async () => {
+    const response = await chrome.runtime.sendMessage(createMessage("CLEAR_CACHE"));
+    const removed = (response?.data as { removed?: number } | undefined)?.removed ?? 0;
+    setCacheMessage(`Removed ${removed} cached answer${removed === 1 ? "" : "s"}.`);
+    void loadDiagnostics();
+    setTimeout(() => setCacheMessage(""), 3000);
+  };
+
+  const clampNumber = (value: string, min: number, max: number, fallback: number) => {
+    const n = Number.parseInt(value, 10);
+    return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
+  };
 
   const handleSave = async () => {
     const updatedPrivacy: PrivacySettings = {
@@ -81,10 +115,12 @@ export function App() {
         anthropic: keys.anthropic,
       },
       privacy: updatedPrivacy,
+      performance,
     });
 
     setSaved(true);
     void reloadAnalytics();
+    void loadDiagnostics();
     setTimeout(() => setSaved(false), 2000);
   };
 
@@ -182,6 +218,116 @@ export function App() {
             </div>
           </div>
         </Card>
+
+        <Card
+          title="Performance"
+          description="Reuse identical answers and cap cloud requests per provider"
+        >
+          <div className="space-y-4">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={performance.cacheEnabled}
+                onChange={(e) => setPerformance({ ...performance, cacheEnabled: e.target.checked })}
+              />
+              Reuse the answer when the same text, action and provider are requested again
+            </label>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  Keep cached answers (minutes)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={1440}
+                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+                  value={performance.cacheTtlMinutes}
+                  disabled={!performance.cacheEnabled}
+                  onChange={(e) =>
+                    setPerformance({
+                      ...performance,
+                      cacheTtlMinutes: clampNumber(e.target.value, 1, 1440, 30),
+                    })
+                  }
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  Cloud requests per minute (per provider)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={120}
+                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+                  value={performance.requestsPerMinute}
+                  onChange={(e) =>
+                    setPerformance({
+                      ...performance,
+                      requestsPerMinute: clampNumber(e.target.value, 1, 120, 20),
+                    })
+                  }
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button variant="secondary" onClick={() => void handleClearCache()}>
+                Clear cached answers
+              </Button>
+              {cacheMessage && <span className="text-xs text-slate-500">{cacheMessage}</span>}
+            </div>
+          </div>
+        </Card>
+
+        {diagnostics && (
+          <Card
+            title="Diagnostics"
+            description="Cache, rate limits and recent structured log events (stored locally)"
+          >
+            <div className="space-y-1" data-testid="diagnostics">
+              <MetricRow name="Cached answers" value={String(diagnostics.cache.entries)} />
+              <MetricRow
+                name="Cache hits / misses (this session)"
+                value={`${diagnostics.cache.hits} / ${diagnostics.cache.misses}`}
+              />
+              {diagnostics.rateLimits.map((r) => (
+                <MetricRow
+                  key={r.provider}
+                  name={`${r.provider} requests available`}
+                  value={`${r.remaining} / ${r.capacity}`}
+                />
+              ))}
+            </div>
+            <div className="mt-4 flex items-center justify-between">
+              <p className="text-sm font-medium text-slate-700">Recent events</p>
+              <Button variant="secondary" onClick={() => void loadDiagnostics()}>
+                Refresh
+              </Button>
+            </div>
+            {diagnostics.logs.length === 0 ? (
+              <p className="mt-2 text-xs text-slate-500">No events yet.</p>
+            ) : (
+              <ul className="mt-2 max-h-64 space-y-1 overflow-y-auto font-mono text-xs text-slate-700">
+                {diagnostics.logs.map((log, i) => (
+                  <li key={`${log.timestamp}-${i}`} className="rounded bg-slate-100 px-2 py-1">
+                    <span className="text-slate-500">
+                      {new Date(log.timestamp).toLocaleTimeString()}
+                    </span>{" "}
+                    <span className={log.level === "error" ? "text-red-600" : "text-slate-600"}>
+                      {log.level}
+                    </span>{" "}
+                    {log.message}
+                    {typeof log.data?.eventType === "string" && (
+                      <span className="text-slate-500"> [{log.data.eventType}]</span>
+                    )}
+                    {log.error && <span className="text-red-600"> — {log.error}</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        )}
 
         {analytics && (
           <Card title="Analytics" description="Local-only metrics — never sent to servers">

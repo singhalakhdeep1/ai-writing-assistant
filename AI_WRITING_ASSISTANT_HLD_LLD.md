@@ -8,9 +8,9 @@ This document provides comprehensive documentation for HLD/LLD patterns implemen
 ### LLD Topics (Low-Level Design)
 
 #### 1. Distributed Caching
-**Location:** `packages/services/cache/cache.service.ts`
+**Location:** `packages/services/src/cache.ts` (`@awa/services`), used by `extension/background/infrastructure.ts`
 
-**Description:** Implements distributed caching with Redis for AI writing assistant data.
+**Description:** TTL cache for AI answers. An MV3 service worker cannot open a Redis connection, so entries live in `chrome.storage.local` behind a `KeyValueStore` interface (memory store outside the extension). Identical requests (same provider, action, prompt, site and text) are answered from the cache; lifetime and on/off are set in Options → Performance.
 
 **Key Features:**
 - Get/set/delete operations
@@ -20,7 +20,7 @@ This document provides comprehensive documentation for HLD/LLD patterns implemen
 
 **Usage Example:**
 ```typescript
-import { CacheService } from './packages/services/cache/cache.service';
+import { CacheService } from '@awa/services';
 
 const cache = new CacheService();
 const cached = await cache.get('session:123');
@@ -28,7 +28,7 @@ await cache.set('session:123', JSON.stringify(session), 3600);
 ```
 
 #### 2. API Rate Limiting
-**Location:** `packages/services/rate-limiting/rate-limiting.service.ts`
+**Location:** `packages/services/src/rate-limiting.ts`
 
 **Description:** Implements token bucket algorithm for API rate limiting.
 
@@ -36,18 +36,18 @@ await cache.set('session:123', JSON.stringify(session), 3600);
 - Token bucket algorithm
 - Per-key rate limiting
 - Configurable bucket capacity
-- Redis-backed storage
+- Persisted in `chrome.storage.local`; one bucket per cloud provider, sized by Options → Performance (requests per minute)
 
 **Usage Example:**
 ```typescript
-import { RateLimitingService } from './packages/services/rate-limiting/rate-limiting.service';
+import { RateLimitingService } from '@awa/services';
 
 const rateLimiting = new RateLimitingService();
 const allowed = await rateLimiting.isAllowed(`user:${userId}`, 1);
 ```
 
 #### 3. Structured Logging
-**Location:** `packages/services/structured-logging/structured-logging.service.ts`
+**Location:** `packages/services/src/structured-logging.ts`
 
 **Description:** Implements structured logging with correlation IDs and context.
 
@@ -55,11 +55,11 @@ const allowed = await rateLimiting.isAllowed(`user:${userId}`, 1);
 - Structured log entries
 - Correlation ID tracking
 - User context tracking
-- Audit event logging
+- Audit event logging (`ai.request`, `ai.completed`, `ai.cache_hit`, `ai.rate_limited`, `settings.saved`, ...), one correlation id per AI request, recent entries shown in Options → Diagnostics
 
 **Usage Example:**
 ```typescript
-import { StructuredLoggingService } from './packages/services/structured-logging/structured-logging.service';
+import { StructuredLoggingService } from '@awa/services';
 
 const logging = new StructuredLoggingService();
 logging.logAuditEvent('ContentGenerated', 'AI generated content', { userId, sessionId });

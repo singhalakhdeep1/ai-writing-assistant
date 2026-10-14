@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createMessage, pingBackground } from "@awa/messaging";
 import type {
   AIRequest,
@@ -72,15 +72,32 @@ export function useAIStream() {
   const [diffs, setDiffs] = useState<
     Array<{ original: string; modified: string; changed: boolean }>
   >([]);
+  /** Request whose suggestion is on screen; requests may start in the toolbar, popup or a shortcut. */
+  const activeRequest = useRef<string | null>(null);
 
   useEffect(() => {
+    /** Switches to a suggestion request that started outside this view. */
+    const adopt = (id: string) => {
+      if (activeRequest.current === id) return;
+      activeRequest.current = id;
+      setRequestId(id);
+      setStreamText("");
+      setExplanation("");
+      setError(null);
+      setDiffs([]);
+      setIsStreaming(true);
+    };
+
     const listener = (message: { type: string; payload?: unknown }) => {
       if (message.type === "AI_STREAM_CHUNK") {
         const chunk = message.payload as AIStreamChunk;
         if (chunk.done) return;
         // "Explain why" streams into its own channel so it never replaces the suggestion.
         if (chunk.action === "explain") setExplanation((prev) => prev + chunk.content);
-        else setStreamText((prev) => prev + chunk.content);
+        else {
+          adopt(chunk.requestId);
+          setStreamText((prev) => prev + chunk.content);
+        }
       }
       if (message.type === "AI_STREAM_DONE") {
         const payload = message.payload as {
@@ -95,6 +112,7 @@ export function useAIStream() {
           setIsExplaining(false);
           return;
         }
+        adopt(payload.requestId);
         setStreamText(payload.fullText);
         setDiffs(payload.diffs ?? []);
         if (payload.original) setOriginalText(payload.original);
@@ -131,6 +149,7 @@ export function useAIStream() {
       return null;
     }
     const id = (response.data as { requestId: string }).requestId;
+    activeRequest.current = id;
     setRequestId(id);
     return id;
   }, []);
@@ -162,6 +181,7 @@ export function useAIStream() {
     setStreamText("");
     setError(null);
     setDiffs([]);
+    activeRequest.current = null;
     setRequestId(null);
     setIsStreaming(false);
     setOriginalText("");

@@ -61,7 +61,9 @@ export type MessageType =
   | "CLEAR_HIGHLIGHTS"
   | "GET_SETTINGS"
   | "SAVE_SETTINGS"
-  | "GET_ANALYTICS";
+  | "GET_ANALYTICS"
+  | "CLEAR_CACHE"
+  | "GET_DIAGNOSTICS";
 
 /** Base message envelope sent between extension contexts. */
 export interface ExtensionMessage<T = unknown> {
@@ -120,11 +122,41 @@ export interface ProviderKeys {
   anthropic?: string;
 }
 
+/** Response cache and rate-limit preferences (HLD: caching + rate limiting). */
+export interface PerformanceSettings {
+  /** Reuse the answer for an identical request (same provider, action and text). */
+  cacheEnabled: boolean;
+  cacheTtlMinutes: number;
+  /** Cloud requests allowed per provider per minute (token bucket, bursts up to this size). */
+  requestsPerMinute: number;
+}
+
+export const DEFAULT_PERFORMANCE: PerformanceSettings = {
+  cacheEnabled: true,
+  cacheTtlMinutes: 30,
+  requestsPerMinute: 20,
+};
+
 /** User settings stored in chrome.storage. */
 export interface AppSettings {
   preferredProvider: AIProvider;
   providerKeys: ProviderKeys;
   privacy: PrivacySettings;
+  performance?: PerformanceSettings;
+}
+
+/** Cache, rate-limit and recent-log snapshot shown on the Options page. */
+export interface DiagnosticsSnapshot {
+  cache: { entries: number; hits: number; misses: number };
+  rateLimits: Array<{ provider: AIProvider; remaining: number; capacity: number }>;
+  logs: Array<{
+    timestamp: string;
+    level: string;
+    message: string;
+    correlationId: string;
+    data?: Record<string, unknown>;
+    error?: string;
+  }>;
 }
 
 /** User privacy preferences. */
